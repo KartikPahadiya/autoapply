@@ -290,36 +290,60 @@
   word-break: break-all;
 }
 
-.access-smtp-toggle {
-  background: none;
-  border: none;
-  color: var(--brass-bright);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 0;
-  margin-top: 8px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+/* Instructions for App Password */
+.access-instructions {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--ink-deep);
+  border: 1px solid var(--panel-line);
+  border-radius: 8px;
 }
 
-.access-smtp-toggle:hover {
-  color: var(--brass);
+.access-instructions-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--paper);
+  margin: 0 0 10px;
 }
 
-.access-smtp-help {
-  font-size: 12px;
+.access-instructions-list {
+  margin: 0;
+  padding-left: 18px;
   color: var(--muted);
-  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.access-instructions-list li {
+  margin-bottom: 4px;
+}
+
+.access-instructions-list a {
+  color: var(--brass-bright);
+  text-decoration: none;
+}
+
+.access-instructions-list a:hover {
+  text-decoration: underline;
+}
+
+.access-instructions-list code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--panel-raised);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--paper);
+}
+
+.access-instructions-note {
+  font-size: 12px;
+  color: var(--muted-dim);
+  margin: 10px 0 0;
   line-height: 1.5;
 }
 
-.access-smtp-help a {
-  color: var(--brass-bright);
-}
-  font-size: 13px;
-  color: var(--signal-green);
-  font-family: var(--font-mono);
-  margin: 0;
-  word-break: break-all;
+.access-instructions-note strong {
+  color: var(--paper);
 }

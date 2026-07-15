@@ -13,7 +13,6 @@ export default function AccessPanel({
   const [uploading, setUploading] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const [smtpPassword, setSmtpPassword] = useState("");
-  const [showSmtp, setShowSmtp] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState(null);
@@ -59,11 +58,11 @@ export default function AccessPanel({
         <p className="access-eyebrow">Career Agent</p>
         <h1 className="access-title">Get started in 2 steps</h1>
         <p className="access-sub">
-          Enter your email and upload your resume. Then search jobs, tailor your resume, and send emails — all in one place.
+          Enter your Gmail and App Password, upload your resume. Then search jobs, tailor your resume, and send emails — all from your own Gmail address.
         </p>
 
         <div className="access-card">
-          {/* Row 1 — Email */}
+          {/* Row 1 — Email + App Password */}
           <div className="access-row">
             <div className="access-light-wrap">
               <div className={`access-light ${email ? "done" : ""}`} />
@@ -73,23 +72,24 @@ export default function AccessPanel({
               <p className={`access-row-label ${email ? "done" : ""}`}>
                 {email ? "Saved" : "Step 1"}
               </p>
-              <h2 className="access-row-title">Your email</h2>
+              <h2 className="access-row-title">Your Gmail & App Password</h2>
               <p className="access-row-desc">
-                Used as the sender address when you send emails. Add a Gmail App Password to send FROM your own Gmail address.
+                We use your Gmail's App Password to send emails directly from your address. Your real password is never used.
               </p>
+
               {email ? (
                 <p className="access-signed-in">{email}</p>
               ) : (
-                <form onSubmit={handleSaveEmail} className="access-email-form">
-                  <input
-                    type="email"
-                    className="access-email-input"
-                    placeholder="you@gmail.com"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    disabled={savingEmail || !authChecked}
-                  />
-                  {showSmtp && (
+                <>
+                  <form onSubmit={handleSaveEmail} className="access-email-form">
+                    <input
+                      type="email"
+                      className="access-email-input"
+                      placeholder="you@gmail.com"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      disabled={savingEmail || !authChecked}
+                    />
                     <input
                       type="password"
                       className="access-email-input"
@@ -98,29 +98,39 @@ export default function AccessPanel({
                       onChange={(e) => setSmtpPassword(e.target.value)}
                       disabled={savingEmail || !authChecked}
                     />
-                  )}
-                  <button className="access-btn" type="submit" disabled={savingEmail || !emailInput.trim()}>
-                    {savingEmail ? "Saving…" : "Save email →"}
-                  </button>
-                </form>
-              )}
-              {!email && (
-                <button
-                  className="access-smtp-toggle"
-                  onClick={() => setShowSmtp((s) => !s)}
-                  type="button"
-                >
-                  {showSmtp ? "↑ Hide App Password" : "↓ Send from my Gmail (App Password)"}
-                </button>
-              )}
-              {showSmtp && !email && (
-                <p className="access-smtp-help">
-                  <strong>How to get an App Password:</strong> Go to{" "}
-                  <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">
-                    Google Account → Security → App Passwords
-                  </a>
-                  . Generate one, copy the 16-character code, and paste it here. Your real password is never used.
-                </p>
+                    <button className="access-btn" type="submit" disabled={savingEmail || !emailInput.trim()}>
+                      {savingEmail ? "Saving…" : "Save email →"}
+                    </button>
+                  </form>
+
+                  {/* Step-by-step instructions */}
+                  <div className="access-instructions">
+                    <p className="access-instructions-title">How to get your Gmail App Password:</p>
+                    <ol className="access-instructions-list">
+                      <li>
+                        Go to{" "}
+                        <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">
+                          Google Account → Security → App Passwords
+                        </a>
+                      </li>
+                      <li>
+                        Sign in if asked. Make sure <strong>2-Step Verification is ON</strong> (required for App Passwords).
+                      </li>
+                      <li>
+                        Click <strong>"Select app"</strong> → choose <strong>"Other (Custom name)"</strong>
+                      </li>
+                      <li>
+                        Type <strong>"Career Agent"</strong> and click <strong>"Generate"</strong>
+                      </li>
+                      <li>
+                        Copy the <strong>16-character code</strong> (e.g., <code>abcd efgh ijkl mnop</code>) and paste it above
+                      </li>
+                    </ol>
+                    <p className="access-instructions-note">
+                      ⚠️ This is <strong>not</strong> your Gmail password. It's a separate app-specific password. Google only shows it once — copy it immediately.
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -161,7 +171,7 @@ export default function AccessPanel({
               {resumeUploaded
                 ? email
                   ? "Ready to go"
-                  : "Resume ready · Email optional for sending"
+                  : "Resume ready · Enter email to send emails"
                 : "Upload your resume to continue"}
             </span>
             <button className="access-enter-btn" disabled={!resumeUploaded} onClick={onEnter}>
