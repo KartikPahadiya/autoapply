@@ -37,7 +37,6 @@
   max-width: 40ch;
 }
 
-/* Card: column layout — body on top, status bar below */
 .access-card {
   background: var(--panel);
   border: 1px solid var(--panel-line);
@@ -45,68 +44,57 @@
   padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
-  gap: 0;
 }
 
-/* Body: row layout — track on left, steps on right */
-.access-body {
+/* Step rows: each row has a light on the left, content on the right */
+.access-step-row {
   display: flex;
-  gap: 16px;
   align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  position: relative;
 }
 
-/* Vertical track with two dots and a connecting line */
-.access-track {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-  width: 22px;
-  padding-top: 16px; /* aligns dot center with step label */
+.access-step-row + .access-step-row {
+  border-top: 1px solid var(--panel-line);
 }
 
-.access-track-dot {
+/* Light on the left side of each row */
+.access-step-row .access-light {
   width: 22px;
   height: 22px;
   border-radius: 50%;
   border: 2px solid var(--muted-dim);
   background: var(--ink-deep);
   flex-shrink: 0;
-  transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+  margin-top: 2px;
+  position: relative;
   z-index: 1;
+  transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
 }
 
-.access-track-dot.done {
+.access-step-row .access-light.done {
   border-color: var(--brass-bright);
   background: var(--brass);
   box-shadow: 0 0 0 4px rgba(201, 154, 68, 0.18), 0 0 14px rgba(224, 184, 102, 0.55);
 }
 
-/* The line that connects the two dots */
-.access-track-line {
-  flex: 1;
-  width: 3px;
-  min-height: 20px;
-  background: var(--panel-line);
-  position: relative;
-  overflow: hidden;
-  border-radius: 2px;
-  margin: 2px 0;
-  z-index: 0;
-}
-
-.access-track-line::after {
+/* Vertical line connecting first row's light to second row's light */
+.access-step-row:first-child::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: var(--brass);
-  transform: scaleY(0);
-  transform-origin: top;
-  transition: transform 0.6s ease;
+  left: 10px; /* center of the 22px light (22/2 - 3/2 = 9.5 ≈ 10) */
+  top: 40px; /* 16px padding + 22px circle + 2px margin-top */
+  width: 3px;
+  bottom: -18px; /* extend past row to reach second light (1px border + 16px padding + 1px margin-top) */
+  background: var(--panel-line);
+  z-index: 0;
+  border-radius: 2px;
 }
 
-.access-track-line.filled::after {
-  transform: scaleY(1);
+/* Fill the line when first step is done */
+.access-step-row:first-child.has-done::after {
+  background: var(--brass);
   animation: traceGlow 2s ease-in-out infinite alternate;
 }
 
@@ -119,22 +107,7 @@
   }
 }
 
-/* Steps on the right */
-.access-steps {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.access-step {
-  padding: 16px 0;
-}
-
-.access-step + .access-step {
-  border-top: 1px solid var(--panel-line);
-}
-
+/* Step body on the right */
 .access-step-body {
   flex: 1;
   min-width: 0;
