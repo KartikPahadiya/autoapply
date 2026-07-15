@@ -549,3 +549,13 @@ async def test_tailor(body: TestTailorRequest, request: Request, response: Respo
         diagnostics["raw_agent_error"] = str(exc)
 
     return diagnostics
+
+
+@app.get("/test/tailor")
+async def test_tailor_get(request: Request, response: Response):
+    """Same as POST /test/tailor but with default test data — visit in
+    your browser for quick diagnostics."""
+    from pydantic import create_model
+    # Re-use the POST logic with defaults
+    default = TestTailorRequest()
+    return await test_tailor(default, request, response)
