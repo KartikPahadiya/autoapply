@@ -12,6 +12,8 @@ export default function AccessPanel({
 }) {
   const [uploading, setUploading] = useState(false);
   const [emailInput, setEmailInput] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [showSmtp, setShowSmtp] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState(null);
@@ -23,7 +25,7 @@ export default function AccessPanel({
     setSavingEmail(true);
     setError(null);
     try {
-      await api.setEmail(emailInput.trim());
+      await api.setEmail(emailInput.trim(), smtpPassword.trim() || undefined);
       onEmailSet(emailInput.trim().toLowerCase());
     } catch (err) {
       setError(err.message || "Failed to save email.");
@@ -73,7 +75,7 @@ export default function AccessPanel({
               </p>
               <h2 className="access-row-title">Your email</h2>
               <p className="access-row-desc">
-                Used as the sender address when you send emails through the agent. No verification needed — just type it in.
+                Used as the sender address when you send emails. Add a Gmail App Password to send FROM your own Gmail address.
               </p>
               {email ? (
                 <p className="access-signed-in">{email}</p>
@@ -82,15 +84,43 @@ export default function AccessPanel({
                   <input
                     type="email"
                     className="access-email-input"
-                    placeholder="you@example.com"
+                    placeholder="you@gmail.com"
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     disabled={savingEmail || !authChecked}
                   />
+                  {showSmtp && (
+                    <input
+                      type="password"
+                      className="access-email-input"
+                      placeholder="Gmail App Password (16 chars)"
+                      value={smtpPassword}
+                      onChange={(e) => setSmtpPassword(e.target.value)}
+                      disabled={savingEmail || !authChecked}
+                    />
+                  )}
                   <button className="access-btn" type="submit" disabled={savingEmail || !emailInput.trim()}>
                     {savingEmail ? "Saving…" : "Save email →"}
                   </button>
                 </form>
+              )}
+              {!email && (
+                <button
+                  className="access-smtp-toggle"
+                  onClick={() => setShowSmtp((s) => !s)}
+                  type="button"
+                >
+                  {showSmtp ? "↑ Hide App Password" : "↓ Send from my Gmail (App Password)"}
+                </button>
+              )}
+              {showSmtp && !email && (
+                <p className="access-smtp-help">
+                  <strong>How to get an App Password:</strong> Go to{" "}
+                  <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">
+                    Google Account → Security → App Passwords
+                  </a>
+                  . Generate one, copy the 16-character code, and paste it here. Your real password is never used.
+                </p>
               )}
             </div>
           </div>

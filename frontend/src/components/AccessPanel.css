@@ -289,3 +289,37 @@
   margin: 0;
   word-break: break-all;
 }
+
+.access-smtp-toggle {
+  background: none;
+  border: none;
+  color: var(--brass-bright);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 8px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.access-smtp-toggle:hover {
+  color: var(--brass);
+}
+
+.access-smtp-help {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+
+.access-smtp-help a {
+  color: var(--brass-bright);
+}
+  font-size: 13px;
+  color: var(--signal-green);
+  font-family: var(--font-mono);
+  margin: 0;
+  word-break: break-all;
+}

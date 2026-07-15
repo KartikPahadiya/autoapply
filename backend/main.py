@@ -76,16 +76,25 @@ async def _start_session_sweeper():
 # ---------------------------------------------------------------------------
 class SetEmailRequest(BaseModel):
     email: str
+    smtp_password: str = ""  # Gmail App Password (optional, 16-char)
 
 
 @app.post("/auth/email")
 def set_email(body: SetEmailRequest, request: Request, response: Response):
-    """Set the user's email address for this session. No verification needed."""
+    """Set the user's email address and optional Gmail App Password.
+    If smtp_password is provided, emails are sent via Gmail SMTP FROM
+    the user's actual address. Otherwise falls back to SendGrid."""
     _, session = get_or_create_session(request, response)
     if "@" not in body.email:
         raise HTTPException(400, "Invalid email address.")
     session.user_email = body.email.strip().lower()
-    return {"ok": True, "email": session.user_email}
+    # Store App Password if provided (trim whitespace, validate length)
+    pw = body.smtp_password.strip()
+    if pw:
+        if len(pw) < 10:
+            raise HTTPException(400, "App Password looks too short. Generate it at Google Account > Security > App Passwords.")
+        session.smtp_password = pw
+    return {"ok": True, "email": session.user_email, "smtp": bool(session.smtp_password)}
 
 
 @app.post("/auth/logout")
@@ -98,7 +107,11 @@ def logout(request: Request, response: Response):
 @app.get("/auth/me")
 def me(request: Request, response: Response):
     _, session = get_or_create_session(request, response)
-    return {"logged_in": bool(session.user_email), "email": session.user_email}
+    return {
+        "logged_in": bool(session.user_email),
+        "email": session.user_email,
+        "smtp": bool(session.smtp_password),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +257,7 @@ def email_me(body: EmailMeRequest, request: Request, response: Response):
     body_text = "\n\n".join(lines)
 
     email_service.send_email(
-        user_email=session.user_email,
+        session=session,
         to_addr=to_addr,
         subject="Your matched LinkedIn jobs",
         body_text=body_text,
@@ -372,7 +385,7 @@ def cold_email_send(body: ColdEmailSendRequest, request: Request, response: Resp
 
         try:
             email_service.send_email(
-                user_email=session.user_email,
+                session=session,
                 to_addr=recipient,
                 subject=item.get("subject", ""),
                 body_text=item.get("body", ""),
@@ -416,7 +429,7 @@ def custom_email_send(body: CustomEmailRequest, request: Request, response: Resp
 
     try:
         email_service.send_email(
-            user_email=session.user_email,
+            session=session,
             to_addr=body.to,
             subject=body.subject,
             body_text=body.body,

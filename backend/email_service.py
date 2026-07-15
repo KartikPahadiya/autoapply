@@ -1,12 +1,19 @@
-"""Hunter.io company-email lookups and SendGrid email sending.
-No Google OAuth required. Users provide their email address directly.
-Emails are sent via SendGrid from a verified domain (e.g., yourapp.com),
-with Reply-To set to the user's email so companies can reply directly to them.
-Caching happens on the SessionData object passed in, so it's scoped per
-user, not global."""
+"""Hunter.io company-email lookups and email sending via SendGrid OR Gmail SMTP.
+
+Two modes:
+1. Gmail SMTP (preferred): user provides Gmail + App Password. Emails sent
+   FROM their actual Gmail address via Gmail's SMTP server.
+2. SendGrid (fallback): uses a verified domain as FROM, with Reply-To set to
+   the user's email.
+
+Caching happens on the SessionData object, scoped per user."""
 import base64
 import os
 import re
+import smtplib
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import requests
 from sendgrid import SendGridAPIClient
@@ -14,8 +21,6 @@ from sendgrid.helpers.mail import Attachment, Content, Email, FileContent, FileN
 
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-# The verified sender address in SendGrid (e.g., career-agent@yourdomain.com).
-# This is the FROM address for all emails. The user's email is set as Reply-To.
 SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "career-agent@example.com")
 
 _sendgrid_client: SendGridAPIClient | None = None
@@ -35,9 +40,6 @@ def sendgrid_configured() -> bool:
 
 
 def extract_company_name(raw: str) -> str:
-    """Best-effort extraction of a plain company name from free-form input
-    that didn't match a last-search result — a LinkedIn company URL, a
-    pasted chunk of a LinkedIn page, or a company name typed directly."""
     raw = raw.strip()
     m = re.search(r"linkedin\.com/company/([A-Za-z0-9\-_%]+)", raw, re.IGNORECASE)
     if m:
@@ -48,8 +50,6 @@ def extract_company_name(raw: str) -> str:
 
 
 def resolve_target(company_or_position: str, matches: list[dict]) -> dict | None:
-    """Find a job from the last search results by position number or
-    company name."""
     stripped = company_or_position.strip()
     if stripped.isdigit():
         idx = int(stripped) - 1
@@ -90,7 +90,36 @@ def get_or_fetch_emails(session, company: str) -> list[dict]:
     return session.email_cache[company]
 
 
-def send_email(
+def _send_via_smtp(
+    user_email: str,
+    smtp_password: str,
+    to_addr: str,
+    subject: str,
+    body_text: str,
+    attachment_bytes: bytes | None = None,
+    attachment_filename: str | None = None,
+) -> None:
+    """Send email via Gmail's SMTP server using the user's App Password.
+    This sends FROM the user's actual Gmail address."""
+    msg = MIMEMultipart() if attachment_bytes else MIMEText(body_text)
+
+    if attachment_bytes:
+        msg.attach(MIMEText(body_text))
+        attachment = MIMEApplication(attachment_bytes)
+        attachment.add_header("Content-Disposition", "attachment", filename=attachment_filename or "resume")
+        msg.attach(attachment)
+
+    msg["From"] = user_email
+    msg["To"] = to_addr
+    msg["Subject"] = subject
+
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(user_email, smtp_password)
+        server.send_message(msg)
+
+
+def _send_via_sendgrid(
     user_email: str,
     to_addr: str,
     subject: str,
@@ -98,15 +127,9 @@ def send_email(
     attachment_bytes: bytes | None = None,
     attachment_filename: str | None = None,
 ) -> None:
-    """Send an email via SendGrid. The FROM address is the verified domain
-    (SENDGRID_FROM_EMAIL), and the user's email is set as Reply-To so
-    companies can reply directly to them.
-
-    The email body is automatically prefixed with a note showing the user's
-    email so the recipient knows who it's from."""
+    """Send email via SendGrid FROM a verified domain, with Reply-To set to user."""
     client = _get_sendgrid_client()
 
-    # Prepend a note showing the user's email
     full_body = f"[Sent on behalf of {user_email}]\n\n{body_text}"
 
     mail = Mail(
@@ -115,7 +138,6 @@ def send_email(
         subject=subject,
         plain_text_content=Content("text/plain", full_body),
     )
-    # Set Reply-To so the company can reply directly to the user
     mail.reply_to = ReplyTo(user_email)
 
     if attachment_bytes and attachment_filename:
@@ -131,3 +153,40 @@ def send_email(
     response = client.send(mail)
     if response.status_code >= 400:
         raise RuntimeError(f"SendGrid error: {response.status_code} — {response.body}")
+
+
+def send_email(
+    session,
+    to_addr: str,
+    subject: str,
+    body_text: str,
+    attachment_bytes: bytes | None = None,
+    attachment_filename: str | None = None,
+) -> None:
+    """Send an email. If the user has provided an SMTP password (Gmail App
+    Password), send via Gmail SMTP FROM their actual address. Otherwise fall
+    back to SendGrid."""
+    user_email = session.user_email
+    smtp_password = getattr(session, "smtp_password", None)
+
+    if not user_email:
+        raise RuntimeError("No user email set.")
+
+    if smtp_password:
+        # Gmail SMTP — sends FROM user's actual email address
+        _send_via_smtp(
+            user_email, smtp_password, to_addr, subject, body_text,
+            attachment_bytes, attachment_filename
+        )
+    else:
+        # SendGrid fallback — sends FROM verified domain
+        if not sendgrid_configured():
+            raise RuntimeError(
+                "Email sending not configured. Either:\n"
+                "1. Enter your Gmail App Password for sending from your own email, or\n"
+                "2. Ask the admin to set SENDGRID_API_KEY in the backend."
+            )
+        _send_via_sendgrid(
+            user_email, to_addr, subject, body_text,
+            attachment_bytes, attachment_filename
+        )
