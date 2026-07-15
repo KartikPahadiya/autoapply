@@ -37,66 +37,58 @@
   max-width: 40ch;
 }
 
+/* Card: track on left, steps on right */
 .access-card {
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: 10px;
   padding: 28px 24px 24px;
-}
-
-.access-row {
   display: flex;
-  align-items: flex-start;
   gap: 16px;
-  padding: 16px 0;
+  align-items: stretch;
 }
 
-.access-row + .access-row {
-  border-top: 1px solid var(--panel-line);
-}
-
-.access-light-wrap {
-  position: relative;
+/* Vertical track with two dots and a connecting line */
+.access-track {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex-shrink: 0;
+  width: 22px;
+  padding-top: 16px; /* aligns dot center with step label */
 }
 
-.access-light {
+.access-track-dot {
   width: 22px;
   height: 22px;
   border-radius: 50%;
   border: 2px solid var(--muted-dim);
   background: var(--ink-deep);
-  transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
   flex-shrink: 0;
+  transition: border-color 0.4s ease, background 0.4s ease, box-shadow 0.4s ease;
+  z-index: 1;
 }
 
-.access-light.done {
+.access-track-dot.done {
   border-color: var(--brass-bright);
   background: var(--brass);
   box-shadow: 0 0 0 4px rgba(201, 154, 68, 0.18), 0 0 14px rgba(224, 184, 102, 0.55);
 }
 
-.access-light.optional {
-  border-color: var(--muted-dim);
-  background: var(--panel-raised);
-  opacity: 0.6;
-}
-
-.access-trace {
-  width: 3px;
+/* The line that connects the two dots */
+.access-track-line {
   flex: 1;
+  width: 3px;
   min-height: 20px;
   background: var(--panel-line);
-  margin-top: 2px;
   position: relative;
   overflow: hidden;
   border-radius: 2px;
+  margin: 2px 0;
+  z-index: 0;
 }
 
-.access-trace::after {
+.access-track-line::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -106,9 +98,8 @@
   transition: transform 0.6s ease;
 }
 
-.access-trace.filled::after {
+.access-track-line.filled::after {
   transform: scaleY(1);
-  box-shadow: 0 0 10px rgba(224, 184, 102, 0.7), 0 0 20px rgba(201, 154, 68, 0.4);
   animation: traceGlow 2s ease-in-out infinite alternate;
 }
 
@@ -121,28 +112,28 @@
   }
 }
 
-/* When the first step is done, pulse the second circle subtly */
-.access-row:nth-child(2) .access-light:not(.done) {
-  animation: circlePulse 2s ease-in-out infinite;
+/* Steps on the right */
+.access-steps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-@keyframes circlePulse {
-  0%, 100% {
-    border-color: var(--muted-dim);
-    box-shadow: none;
-  }
-  50% {
-    border-color: var(--brass);
-    box-shadow: 0 0 0 3px rgba(201, 154, 68, 0.12), 0 0 8px rgba(224, 184, 102, 0.25);
-  }
+.access-step {
+  padding: 16px 0;
 }
 
-.access-row-body {
+.access-step + .access-step {
+  border-top: 1px solid var(--panel-line);
+}
+
+.access-step-body {
   flex: 1;
   min-width: 0;
 }
 
-.access-row-label {
+.access-step-label {
   font-family: var(--font-mono);
   font-size: 11.5px;
   letter-spacing: 0.1em;
@@ -151,11 +142,11 @@
   margin: 0 0 4px;
 }
 
-.access-row-label.done {
+.access-step-label.done {
   color: var(--signal-green);
 }
 
-.access-row-title {
+.access-step-title {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
@@ -163,7 +154,7 @@
   color: var(--paper);
 }
 
-.access-row-desc {
+.access-step-desc {
   font-size: 13px;
   color: var(--muted);
   margin: 0 0 12px;
@@ -271,11 +262,6 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-}
-
-.access-status-count {
-  color: var(--brass-bright);
-  font-weight: 600;
 }
 
 .access-enter-btn {
