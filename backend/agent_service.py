@@ -1,9 +1,7 @@
 """
-Per-session chat agent. Same LLM + tool-based design as the original CLI
-script (linkedin_jobs_chatbot.py), but every tool closes over that
-request's SessionData instead of module-level globals — so concurrent
-users' resumes, search results, and Google credentials never leak into
-each other.
+Per-session chat agent. Every tool closes over that request's SessionData
+instead of module-level globals — so concurrent users' resumes, search
+results, and email settings never leak into each other.
 
 This runs alongside the plain REST endpoints in main.py, not instead of
 them — a frontend can use either the direct buttons (POST /jobs/search
@@ -40,7 +38,7 @@ _llm = ChatHuggingFace(llm=_llm_endpoint)
 
 SYSTEM_PROMPT = """You are a friendly career assistant chatbot with access to these tools.
 
-IMPORTANT: The user does NOT need to log in to use most features. Login (Google OAuth) is ONLY required for sending emails. The user can search jobs, tailor their resume, and look up emails as a guest.
+The user has provided their email address and uploaded their resume. They can use all features.
 
 IMPORTANT RULES:
 - When the user asks to tailor their resume, write a cover letter, make a CV, or customize their resume for ANY job description, you MUST call the tailor_resume_for_role tool IMMEDIATELY. Do NOT ask the user to upload their resume — it is already uploaded in their session. Do NOT ask for confirmation. Just call the tool.
@@ -49,51 +47,37 @@ IMPORTANT RULES:
 - NEVER invent tool results. Only report what the tools return.
 
 1. find_matching_jobs(keywords, location) — searches LinkedIn and returns
-   jobs matched against the user's resume. Works for ALL users (guest or logged in).
-   Only call when the user explicitly asks to find/search jobs. Only ever list
-   jobs, companies, and links that appear verbatim in the tool's output — never
-   invent any. Show every job the tool returned, not a subset of your choosing.
+   jobs matched against the user's resume. Only call when the user explicitly
+   asks to find/search jobs. Only ever list jobs, companies, and links that
+   appear verbatim in the tool's output — never invent any. Show every job
+   the tool returned, not a subset of your choosing.
 
-2. lookup_company_email(company_or_position) — looks up public emails for
-   a company. Works for ALL users (guest or logged in). No login needed.
-   Works against the last search results (company name or position number) OR
-   standalone (a company name, a linkedin.com/company/... URL, or pasted
-   LinkedIn page text) — no prior search required for the standalone case.
+2. lookup_company_email(company_or_position) — looks up public emails for a
+   company. Works against the last search results (company name or position
+   number) OR standalone (company name or LinkedIn URL/pasted text) — no prior
+   search required.
 
 3. tailor_resume_for_role(job_description, company, title) — tailors the
    user's resume and writes a cover letter for a SPECIFIC role, using the
-   Laddro Career tools. Works for ALL users (guest or logged in). The user has
-   ALREADY uploaded their resume before reaching this chat. You do NOT need to
-   ask them to upload it again. When the user says anything like "tailor my
-   resume", "write a cover letter", "make a CV", "customize my resume for this
-   role", or similar — call this tool IMMEDIATELY with the job description the
-   user provided. Pass the full job description text as the job_description
-   parameter. Use the company name if known, otherwise leave it empty.
-   Example: User says "Tailor my resume for this Apple ML role" + pastes JD
-   → Call: tailor_resume_for_role(job_description=<the full JD text>, company="Apple", title="ML Researcher")
+   Laddro Career tools. The user has ALREADY uploaded their resume. You do
+   NOT need to ask them to upload it again. When the user says anything like
+   "tailor my resume", "write a cover letter", "make a CV", or similar —
+   call this tool IMMEDIATELY with the job description they provided. Pass the
+   full job description text as the job_description parameter. Use the company
+   name if known, otherwise leave it empty.
 
 4. email_me_results() — emails the user's last job search results to their
-   own logged-in Gmail. ONLY works if the user is logged in with Google. If the
-   user is not logged in, tell them "Connect your Gmail to send emails" and
-   explain that job search and tailoring work without login.
+   email address. Requires the user to have set their email (which they have).
 
 5. send_cold_emails(companies, message) — sends cold outreach to companies.
-   ONLY works if the user is logged in with Google. If the user is not logged
-   in, tell them "Connect your Gmail to send emails" — do NOT ask them to log
-   in, just state that email sending requires Gmail connection and everything
-   else works without it.
-   If the user IS logged in: CRITICAL SAFETY RULE — before calling this tool,
-   you MUST first show the user a plain-text preview of exactly who you're
-   about to email and with what subject/body, and explicitly ask them to
-   confirm. Only call this tool in a LATER turn, after the user has replied
-   confirming (e.g. "yes", "send it", "go ahead"). Never call it in the same
-   turn you presented the preview.
+   CRITICAL SAFETY RULE: before calling this tool, you MUST first show the user
+   a plain-text preview of exactly who you're about to email and with what
+   subject/body, and explicitly ask them to confirm. Only call this tool in a
+   LATER turn, after the user has replied confirming (e.g. "yes", "send it",
+   "go ahead"). Never call it in the same turn you presented the preview.
 
-6. send_custom_email(to, subject, body, attach_resume) — sends a fully
-   custom email to any recipient. ONLY works if the user is logged in with
-   Google. If the user is not logged in, tell them "Connect your Gmail to send
-   emails" — everything else works without login.
-   If the user IS logged in: Same CRITICAL SAFETY RULE as above.
+6. send_custom_email(to, subject, body, attach_resume) — sends a fully custom
+   email to any recipient. Same CRITICAL SAFETY RULE as above.
 
 Present tool results plainly and accurately — never invent details, never
 claim an email was sent except exactly as the tool reports it.
@@ -139,9 +123,7 @@ def build_session_tools(session):
     @tool_decorator
     async def tailor_resume_for_role(job_description: str, company: str = "", title: str = "") -> str:
         """Tailor the user's resume and write a cover letter for a
-        specific job description, via the Laddro Career tools. Stores the
-        result on the session (keyed by company) so send_cold_emails can
-        reuse it without re-generating."""
+        specific job description, via the Laddro Career tools."""
         if not session.resume_text:
             return "No resume has been uploaded yet — ask the user to upload one first."
         if not tailoring_service.nvidia_configured():
@@ -160,29 +142,32 @@ def build_session_tools(session):
 
     @tool_decorator
     def email_me_results() -> str:
-        """Email the last job search results to the user's own logged-in Gmail."""
-        if not session.google_creds:
-            return "**Connect Gmail to send emails.** You're using the agent as a guest — job search and resume tailoring work without login. Only email sending requires Gmail access. Click the 'Connect Gmail' button in the header to enable this feature."
+        """Email the last job search results to the user's email address."""
+        if not session.user_email:
+            return "No email address set. Ask the user to set their email first."
         if not session.last_matches:
             return "No recent job search results to email."
         lines = ["Here are your matched jobs:\n"]
         for i, m in enumerate(session.last_matches, start=1):
             lines.append(f"{i}. {m['title']} at {m['company']} ({m['location']})\n   {m['url']}")
-        email_service.send_gmail(
-            session.google_creds, session.google_email, "Your matched LinkedIn jobs", "\n\n".join(lines)
-        )
-        return f"Sent to {session.google_email}."
+        try:
+            email_service.send_email(
+                from_addr=session.user_email,
+                to_addr=session.user_email,
+                subject="Your matched LinkedIn jobs",
+                body_text="\n\n".join(lines),
+            )
+        except Exception as exc:
+            return f"Failed to send email: {exc}"
+        return f"Sent to {session.user_email}."
 
     @tool_decorator
     async def send_cold_emails(companies: str, message: str = "") -> str:
         """Send cold outreach, attaching a resume tailored to each
-        company's role (via tailor_resume_for_role, using that job's
-        description) in place of the generic uploaded resume, to
-        companies from the last search results and/or named directly
-        (comma-separated), or 'all'. Only call after the user has
-        confirmed a preview you showed them in an earlier turn."""
-        if not session.google_creds:
-            return "**Connect Gmail to send emails.** You're using the agent as a guest — job search, resume tailoring, and email lookup all work without login. Only email sending requires Gmail access. Click the 'Connect Gmail' button in the header to enable this feature."
+        company's role. Only call after the user has confirmed a preview
+        you showed them in an earlier turn."""
+        if not session.user_email:
+            return "No email address set. Ask the user to set their email first."
         if not session.resume_bytes:
             return "No resume uploaded."
         if not email_service.HUNTER_API_KEY:
@@ -250,9 +235,13 @@ def build_session_tools(session):
             )
 
             try:
-                email_service.send_gmail(
-                    session.google_creds, recipient, subject, body,
-                    attachment_bytes=attachment_bytes, attachment_filename=attachment_filename,
+                email_service.send_email(
+                    from_addr=session.user_email,
+                    to_addr=recipient,
+                    subject=subject,
+                    body_text=body,
+                    attachment_bytes=attachment_bytes,
+                    attachment_filename=attachment_filename,
                 )
                 note = "tailored resume" if used_tailored else "generic resume (tailoring unavailable/failed)"
                 results.append(f"- {company}: sent to {recipient} ({note})")
@@ -265,15 +254,19 @@ def build_session_tools(session):
     def send_custom_email(to: str, subject: str, body: str, attach_resume: bool = False) -> str:
         """Send a fully custom email to any recipient. Only call after the
         user has confirmed a preview you showed them in an earlier turn."""
-        if not session.google_creds:
-            return "**Connect Gmail to send emails.** You're using the agent as a guest — job search, resume tailoring, and email lookup all work without login. Only email sending requires Gmail access. Click the 'Connect Gmail' button in the header to enable this feature."
+        if not session.user_email:
+            return "No email address set. Ask the user to set their email first."
         if "@" not in to:
             return f"'{to}' doesn't look like a valid email address."
         attachment_bytes = session.resume_bytes if attach_resume else None
         try:
-            email_service.send_gmail(
-                session.google_creds, to, subject, body,
-                attachment_bytes=attachment_bytes, attachment_filename=session.resume_filename,
+            email_service.send_email(
+                from_addr=session.user_email,
+                to_addr=to,
+                subject=subject,
+                body_text=body,
+                attachment_bytes=attachment_bytes,
+                attachment_filename=session.resume_filename,
             )
         except Exception as exc:
             return f"Failed to send: {exc}"
@@ -293,8 +286,6 @@ async def chat(session, message: str) -> str:
     tools = build_session_tools(session)
     agent = create_react_agent(_llm, tools)
 
-    # Build a dynamic system prompt that includes the user's actual resume
-    # and session state so the LLM never asks for things it already has.
     context_lines = []
     if session.resume_text:
         resume_snippet = session.resume_text[:2000]
@@ -306,10 +297,10 @@ async def chat(session, message: str) -> str:
     else:
         context_lines.append("\nNOTE: The user has NOT uploaded a resume yet.")
 
-    if session.google_email:
-        context_lines.append(f"\nUser is logged in as: {session.google_email}")
+    if session.user_email:
+        context_lines.append(f"\nUser email: {session.user_email}")
     else:
-        context_lines.append("\nNOTE: The user is NOT logged in with Google.")
+        context_lines.append("\nNOTE: The user has NOT set their email address yet.")
 
     if session.last_matches:
         context_lines.append(f"\nLast job search: {len(session.last_matches)} results stored.")

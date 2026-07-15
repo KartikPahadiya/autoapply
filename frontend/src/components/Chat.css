@@ -68,6 +68,66 @@
   background: var(--brass-bright);
 }
 
+.console-email-bar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-line);
+  padding: 10px 24px;
+  flex-shrink: 0;
+}
+
+.console-email-form {
+  display: flex;
+  gap: 8px;
+  max-width: 780px;
+  margin: 0 auto;
+  align-items: center;
+}
+
+.console-email-input {
+  flex: 1;
+  background: var(--ink-deep);
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.console-email-input:focus {
+  border-color: var(--brass);
+}
+
+.console-email-btn {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  border: none;
+  border-radius: 6px;
+  background: var(--brass);
+  color: var(--ink-deep);
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.console-email-btn:hover:not(:disabled) {
+  background: var(--brass-bright);
+}
+
+.console-email-btn.ghost {
+  background: transparent;
+  border: 1px solid var(--panel-line);
+  color: var(--muted);
+}
+
+.console-email-btn.ghost:hover {
+  background: var(--panel-raised);
+  color: var(--paper);
+}
+
 .console-signout {
   font-family: var(--font-mono);
   font-size: 12px;

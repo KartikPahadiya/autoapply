@@ -32,6 +32,34 @@ class SessionData:
     created_at: float = field(default_factory=time.time)
     last_active_at: float = field(default_factory=time.time)
 
+    # User's email address (entered directly, no OAuth required)
+    user_email: Optional[str] = None
+
+    # Resume — kept in memory only; never written to disk.
+    resume_text: Optional[str] = None
+    resume_filename: Optional[str] = None
+    resume_bytes: Optional[bytes] = None
+    resume_content_type: Optional[str] = None
+
+    # Last job search results for this session
+    last_matches: list = field(default_factory=list)    # list[dict]
+    vector_collection_name: Optional[str] = None          # ephemeral, in-memory Chroma collection
+
+    # Hunter.io lookup cache, scoped to this session only
+    email_cache: dict = field(default_factory=dict)
+
+    # Chat agent conversation history for this session (list[BaseMessage])
+    chat_history: list = field(default_factory=list)
+
+    # Tailored resume/cover-letter results, keyed by company name (or
+    # "_default" for a standalone JD with no company given). Each value is
+    # {"cover_letter": str, "tailored_resume_url": str | None, "raw_reply": str}
+    tailored_cache: dict = field(default_factory=dict)
+
+class SessionData:
+    created_at: float = field(default_factory=time.time)
+    last_active_at: float = field(default_factory=time.time)
+
     # Google OAuth — the Credentials object and email live only here,
     # only for this session, only in memory.
     google_creds: Optional[Any] = None          # google.oauth2.credentials.Credentials

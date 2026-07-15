@@ -32,8 +32,8 @@ async function request(path, options = {}) {
 
 export const api = {
   // ---- Auth -------------------------------------------------------
-  googleLoginUrl: () => `${API_BASE}/auth/google/login`,
   me: () => request("/auth/me"),
+  setEmail: (email) => request("/auth/email", { method: "POST", body: JSON.stringify({ email }) }),
   logout: () => request("/auth/logout", { method: "POST" }),
 
   // ---- Resume -------------------------------------------------------
@@ -43,18 +43,6 @@ export const api = {
     return request("/resume/upload", { method: "POST", body: form });
   },
   resumeStatus: () => request("/resume/status"),
-  tailorResume: (job_description, company = "", title = "") =>
-    request("/resume/tailor", {
-      method: "POST",
-      body: JSON.stringify({ job_description, company, title }),
-    }),
-  tailoredResumeDownloadUrl: (key) => `${API_BASE}/resume/tailored/${encodeURIComponent(key)}/download`,
-
-  uploadResume: (file) => {
-    const form = new FormData();
-    form.append("file", file);
-    return request("/resume/upload", { method: "POST", body: form });
-  },
   tailorResume: (job_description, company = "", title = "") =>
     request("/resume/tailor", {
       method: "POST",

@@ -6,21 +6,14 @@ import "./App.css";
 
 export default function App() {
   const [authChecked, setAuthChecked] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
   const [email, setEmail] = useState(null);
   const [resumeUploaded, setResumeUploaded] = useState(false);
   const [entered, setEntered] = useState(() => sessionStorage.getItem("entered") === "true");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("login")) {
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-
     Promise.allSettled([api.me(), api.resumeStatus()])
       .then(([meResult, resumeResult]) => {
         if (meResult.status === "fulfilled") {
-          setLoggedIn(meResult.value.logged_in);
           setEmail(meResult.value.email);
         }
         if (resumeResult.status === "fulfilled") {
@@ -29,6 +22,10 @@ export default function App() {
       })
       .finally(() => setAuthChecked(true));
   }, []);
+
+  const handleEmailSet = (email) => {
+    setEmail(email);
+  };
 
   const handleResumeUploaded = () => {
     setResumeUploaded(true);
@@ -45,7 +42,6 @@ export default function App() {
     } catch {
       /* best-effort */
     }
-    setLoggedIn(false);
     setEmail(null);
     setEntered(false);
     setResumeUploaded(false);
@@ -60,23 +56,18 @@ export default function App() {
     );
   }
 
-  // ONLY resume is required to enter. Login is optional (needed only for email sending).
   const canEnter = resumeUploaded;
 
   return (
     <div className="app-shell">
       {canEnter && entered ? (
-        <Chat
-          email={email}
-          loggedIn={loggedIn}
-          onSignOut={handleSignOut}
-        />
+        <Chat email={email} onSignOut={handleSignOut} onSetEmail={handleEmailSet} />
       ) : (
         <AccessPanel
           authChecked={authChecked}
-          loggedIn={loggedIn}
           email={email}
           resumeUploaded={resumeUploaded}
+          onEmailSet={handleEmailSet}
           onResumeUploaded={handleResumeUploaded}
           onEnter={handleEnter}
         />

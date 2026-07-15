@@ -4,27 +4,21 @@ import remarkGfm from "remark-gfm";
 import { api } from "../api.js";
 import "./Chat.css";
 
-const SUGGESTIONS_ALL = [
+const SUGGESTIONS = [
   "Find product manager jobs in Austin",
   "Tailor my resume for this job description: …",
   "Look up emails for the top match",
   "Email me my last search results",
 ];
 
-const SUGGESTIONS_GUEST = [
-  "Find AI engineer jobs remote",
-  "Tailor my resume for this job description: …",
-  "Look up emails for Apple",
-];
-
-export default function Chat({ email, loggedIn, onSignOut }) {
+export default function Chat({ email, onSignOut, onSetEmail }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+  const [emailInput, setEmailInput] = useState(email || "");
   const bodyRef = useRef(null);
   const textareaRef = useRef(null);
-
-  const suggestions = loggedIn ? SUGGESTIONS_ALL : SUGGESTIONS_GUEST;
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
@@ -69,8 +63,16 @@ export default function Chat({ email, loggedIn, onSignOut }) {
     }
   };
 
-  const handleConnectGmail = () => {
-    window.location.href = api.googleLoginUrl();
+  const handleSaveEmail = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !emailInput.includes("@")) return;
+    try {
+      await api.setEmail(emailInput.trim());
+      onSetEmail(emailInput.trim().toLowerCase());
+      setEditingEmail(false);
+    } catch (err) {
+      alert(err.message || "Failed to save email.");
+    }
   };
 
   return (
@@ -81,34 +83,57 @@ export default function Chat({ email, loggedIn, onSignOut }) {
           <div>
             <p className="console-title">Career Agent</p>
             <p className="console-status">
-              {loggedIn ? `Signed in as ${email}` : "Guest mode · Connect Gmail to send emails"}
+              {email ? `Email: ${email}` : "No email set · enter one to send emails"}
             </p>
           </div>
         </div>
         <div className="console-header-right">
-          {!loggedIn && (
-            <button className="console-connect" onClick={handleConnectGmail}>
-              Connect Gmail
+          {!email && (
+            <button className="console-connect" onClick={() => setEditingEmail(true)}>
+              Set email
+            </button>
+          )}
+          {email && !editingEmail && (
+            <button className="console-connect" onClick={() => { setEditingEmail(true); setEmailInput(email); }}>
+              Edit email
             </button>
           )}
           <button className="console-signout" onClick={onSignOut}>
-            {loggedIn ? "Sign out" : "Exit"}
+            Exit
           </button>
         </div>
       </header>
+
+      {editingEmail && (
+        <div className="console-email-bar">
+          <form className="console-email-form" onSubmit={handleSaveEmail}>
+            <input
+              type="email"
+              className="console-email-input"
+              placeholder="you@example.com"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              autoFocus
+            />
+            <button className="console-email-btn" type="submit" disabled={!emailInput.trim()}>
+              Save
+            </button>
+            <button className="console-email-btn ghost" type="button" onClick={() => setEditingEmail(false)}>
+              Cancel
+            </button>
+          </form>
+        </div>
+      )}
 
       <div className="console-body" ref={bodyRef}>
         {messages.length === 0 && (
           <div className="console-empty">
             <h3>Clearance confirmed. Where should we start?</h3>
             <p>
-              Ask it to search jobs, look up a company's email, or tailor your resume for a role.
-              {loggedIn
-                ? " You can also send outreach emails when you're ready."
-                : " Connect Gmail anytime if you want to send emails later."}
+              Ask it to search jobs, look up a company's email, tailor your resume for a role, or send outreach emails.
             </p>
             <div className="console-suggestions">
-              {suggestions.map((s) => (
+              {SUGGESTIONS.map((s) => (
                 <button key={s} className="console-suggestion" onClick={() => send(s)}>
                   {s}
                 </button>

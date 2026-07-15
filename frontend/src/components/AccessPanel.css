@@ -188,8 +188,33 @@
   color: var(--paper);
   border-color: var(--muted-dim);
 }
-  background: transparent;
-  color: var(--signal-green);
+
+.access-email-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.access-email-input {
+  flex: 1;
+  min-width: 180px;
+  background: var(--ink-deep);
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.access-email-input:focus {
+  border-color: var(--brass);
+}
+
+.access-email-input::placeholder {
+  color: var(--muted-dim);
 }
 
 .access-file-input {

@@ -1,16 +1,36 @@
-"""Hunter.io company-email lookups and Gmail sending. Caching happens on
-the SessionData object passed in, so it's scoped per user, not global."""
+"""Hunter.io company-email lookups and SendGrid email sending.
+No Google OAuth required. Users provide their email address directly,
+and emails are sent via SendGrid with their address as the From field.
+Caching happens on the SessionData object passed in, so it's scoped per
+user, not global."""
 import base64
 import os
 import re
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import requests
-from googleapiclient.discovery import build as google_build
+import re
+
+import requests
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Attachment, Content, Email, FileContent, FileName, FileType, Mail, Personalization
 
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
+_sendgrid_client: SendGridAPIClient | None = None
+
+
+def _get_sendgrid_client() -> SendGridAPIClient:
+    global _sendgrid_client
+    if _sendgrid_client is None:
+        if not SENDGRID_API_KEY:
+            raise RuntimeError("SENDGRID_API_KEY is not set in .env — email sending is unavailable.")
+        _sendgrid_client = SendGridAPIClient(SENDGRID_API_KEY)
+    return _sendgrid_client
+
+
+def sendgrid_configured() -> bool:
+    return bool(SENDGRID_API_KEY)
 
 
 def extract_company_name(raw: str) -> str:
@@ -69,26 +89,35 @@ def get_or_fetch_emails(session, company: str) -> list[dict]:
     return session.email_cache[company]
 
 
-def send_gmail(
-    creds,
+def send_email(
+    from_addr: str,
     to_addr: str,
     subject: str,
     body_text: str,
     attachment_bytes: bytes | None = None,
     attachment_filename: str | None = None,
 ) -> None:
-    if attachment_bytes:
-        message = MIMEMultipart()
-        message.attach(MIMEText(body_text))
-        attachment = MIMEApplication(attachment_bytes)
-        attachment.add_header("Content-Disposition", "attachment", filename=attachment_filename or "resume")
-        message.attach(attachment)
-    else:
-        message = MIMEText(body_text)
+    """Send an email via SendGrid. from_addr is the user's email address
+    (shown as the sender)."""
+    client = _get_sendgrid_client()
 
-    message["to"] = to_addr
-    message["subject"] = subject
-    raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    mail = Mail(
+        from_email=Email(from_addr),
+        to_emails=Email(to_addr),
+        subject=subject,
+        plain_text_content=Content("text/plain", body_text),
+    )
 
-    service = google_build("gmail", "v1", credentials=creds)
-    service.users().messages().send(userId="me", body={"raw": raw}).execute()
+    if attachment_bytes and attachment_filename:
+        encoded = base64.b64encode(attachment_bytes).decode()
+        attachment = Attachment(
+            FileContent(encoded),
+            FileName(attachment_filename),
+            FileType("application/pdf" if attachment_filename.endswith(".pdf") else "application/octet-stream"),
+            "attachment",
+        )
+        mail.add_attachment(attachment)
+
+    response = client.send(mail)
+    if response.status_code >= 400:
+        raise RuntimeError(f"SendGrid error: {response.status_code} — {response.body}")

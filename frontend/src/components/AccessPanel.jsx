@@ -3,20 +3,33 @@ import { api } from "../api.js";
 import "./AccessPanel.css";
 
 export default function AccessPanel({
-  loggedIn,
   email,
   resumeUploaded,
+  onEmailSet,
   onResumeUploaded,
   onEnter,
   authChecked,
 }) {
   const [uploading, setUploading] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState(null);
   const fileInput = useRef(null);
 
-  const handleConnectGmail = () => {
-    window.location.href = api.googleLoginUrl();
+  const handleSaveEmail = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim() || !emailInput.includes("@")) return;
+    setSavingEmail(true);
+    setError(null);
+    try {
+      await api.setEmail(emailInput.trim());
+      onEmailSet(emailInput.trim().toLowerCase());
+    } catch (err) {
+      setError(err.message || "Failed to save email.");
+    } finally {
+      setSavingEmail(false);
+    }
   };
 
   const handleFilePick = () => fileInput.current?.click();
@@ -42,22 +55,54 @@ export default function AccessPanel({
     <div className="access-screen">
       <div className="access-panel">
         <p className="access-eyebrow">Career Agent</p>
-        <h1 className="access-title">Upload your resume to get started</h1>
+        <h1 className="access-title">Get started in 2 steps</h1>
         <p className="access-sub">
-          Search jobs, tailor your resume, and look up company emails — no login required. Connect Gmail
-          only when you want to send emails.
+          Enter your email and upload your resume. Then search jobs, tailor your resume, and send emails — all in one place.
         </p>
 
         <div className="access-card">
-          {/* Row 1 — Resume (REQUIRED) */}
+          {/* Row 1 — Email */}
+          <div className="access-row">
+            <div className="access-light-wrap">
+              <div className={`access-light ${email ? "done" : ""}`} />
+              <div className={`access-trace ${email ? "filled" : ""}`} />
+            </div>
+            <div className="access-row-body">
+              <p className={`access-row-label ${email ? "done" : ""}`}>
+                {email ? "Saved" : "Step 1"}
+              </p>
+              <h2 className="access-row-title">Your email</h2>
+              <p className="access-row-desc">
+                Used as the sender address when you send emails through the agent. No verification needed — just type it in.
+              </p>
+              {email ? (
+                <p className="access-signed-in">{email}</p>
+              ) : (
+                <form onSubmit={handleSaveEmail} className="access-email-form">
+                  <input
+                    type="email"
+                    className="access-email-input"
+                    placeholder="you@example.com"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    disabled={savingEmail || !authChecked}
+                  />
+                  <button className="access-btn" type="submit" disabled={savingEmail || !emailInput.trim()}>
+                    {savingEmail ? "Saving…" : "Save email →"}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2 — Resume */}
           <div className="access-row">
             <div className="access-light-wrap">
               <div className={`access-light ${resumeUploaded ? "done" : ""}`} />
-              <div className={`access-trace ${resumeUploaded ? "filled" : ""}`} />
             </div>
             <div className="access-row-body">
               <p className={`access-row-label ${resumeUploaded ? "done" : ""}`}>
-                {resumeUploaded ? "Uploaded" : "Required"}
+                {resumeUploaded ? "Uploaded" : "Step 2"}
               </p>
               <h2 className="access-row-title">Resume</h2>
               <p className="access-row-desc">
@@ -81,36 +126,12 @@ export default function AccessPanel({
             </div>
           </div>
 
-          {/* Row 2 — Gmail (OPTIONAL) */}
-          <div className="access-row">
-            <div className="access-light-wrap">
-              <div className={`access-light ${loggedIn ? "done" : "optional"}`} />
-            </div>
-            <div className="access-row-body">
-              <p className={`access-row-label ${loggedIn ? "done" : ""}`}>
-                {loggedIn ? "Connected" : "Optional"}
-              </p>
-              <h2 className="access-row-title">Gmail access</h2>
-              <p className="access-row-desc">
-                Only needed if you want the agent to send emails on your behalf. You can connect later from the chat
-                anytime.
-              </p>
-              {loggedIn ? (
-                <p className="access-signed-in">{email}</p>
-              ) : (
-                <button className="access-btn ghost" onClick={handleConnectGmail} disabled={!authChecked}>
-                  Connect Gmail →
-                </button>
-              )}
-            </div>
-          </div>
-
           <div className="access-status-bar">
             <span className="access-status-label">
               {resumeUploaded
-                ? loggedIn
+                ? email
                   ? "Ready to go"
-                  : "Resume ready · Gmail optional"
+                  : "Resume ready · Email optional for sending"
                 : "Upload your resume to continue"}
             </span>
             <button className="access-enter-btn" disabled={!resumeUploaded} onClick={onEnter}>
