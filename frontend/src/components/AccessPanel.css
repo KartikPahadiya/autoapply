@@ -86,13 +86,14 @@
 }
 
 .access-trace {
-  width: 2px;
+  width: 3px;
   flex: 1;
   min-height: 20px;
   background: var(--panel-line);
   margin-top: 2px;
   position: relative;
   overflow: hidden;
+  border-radius: 2px;
 }
 
 .access-trace::after {
@@ -107,6 +108,33 @@
 
 .access-trace.filled::after {
   transform: scaleY(1);
+  box-shadow: 0 0 10px rgba(224, 184, 102, 0.7), 0 0 20px rgba(201, 154, 68, 0.4);
+  animation: traceGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes traceGlow {
+  from {
+    box-shadow: 0 0 6px rgba(224, 184, 102, 0.5), 0 0 12px rgba(201, 154, 68, 0.25);
+  }
+  to {
+    box-shadow: 0 0 14px rgba(224, 184, 102, 0.9), 0 0 28px rgba(201, 154, 68, 0.5);
+  }
+}
+
+/* When the first step is done, pulse the second circle subtly */
+.access-row:nth-child(2) .access-light:not(.done) {
+  animation: circlePulse 2s ease-in-out infinite;
+}
+
+@keyframes circlePulse {
+  0%, 100% {
+    border-color: var(--muted-dim);
+    box-shadow: none;
+  }
+  50% {
+    border-color: var(--brass);
+    box-shadow: 0 0 0 3px rgba(201, 154, 68, 0.12), 0 0 8px rgba(224, 184, 102, 0.25);
+  }
 }
 
 .access-row-body {
