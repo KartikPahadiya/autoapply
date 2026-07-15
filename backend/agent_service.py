@@ -152,7 +152,7 @@ def build_session_tools(session):
             lines.append(f"{i}. {m['title']} at {m['company']} ({m['location']})\n   {m['url']}")
         try:
             email_service.send_email(
-                from_addr=session.user_email,
+                user_email=session.user_email,
                 to_addr=session.user_email,
                 subject="Your matched LinkedIn jobs",
                 body_text="\n\n".join(lines),
@@ -236,7 +236,7 @@ def build_session_tools(session):
 
             try:
                 email_service.send_email(
-                    from_addr=session.user_email,
+                    user_email=session.user_email,
                     to_addr=recipient,
                     subject=subject,
                     body_text=body,
@@ -261,7 +261,7 @@ def build_session_tools(session):
         attachment_bytes = session.resume_bytes if attach_resume else None
         try:
             email_service.send_email(
-                from_addr=session.user_email,
+                user_email=session.user_email,
                 to_addr=to,
                 subject=subject,
                 body_text=body,

@@ -244,7 +244,7 @@ def email_me(body: EmailMeRequest, request: Request, response: Response):
     body_text = "\n\n".join(lines)
 
     email_service.send_email(
-        from_addr=session.user_email,
+        user_email=session.user_email,
         to_addr=to_addr,
         subject="Your matched LinkedIn jobs",
         body_text=body_text,
@@ -372,7 +372,7 @@ def cold_email_send(body: ColdEmailSendRequest, request: Request, response: Resp
 
         try:
             email_service.send_email(
-                from_addr=session.user_email,
+                user_email=session.user_email,
                 to_addr=recipient,
                 subject=item.get("subject", ""),
                 body_text=item.get("body", ""),
@@ -416,7 +416,7 @@ def custom_email_send(body: CustomEmailRequest, request: Request, response: Resp
 
     try:
         email_service.send_email(
-            from_addr=session.user_email,
+            user_email=session.user_email,
             to_addr=body.to,
             subject=body.subject,
             body_text=body.body,

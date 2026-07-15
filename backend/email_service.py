@@ -1,6 +1,7 @@
 """Hunter.io company-email lookups and SendGrid email sending.
-No Google OAuth required. Users provide their email address directly,
-and emails are sent via SendGrid with their address as the From field.
+No Google OAuth required. Users provide their email address directly.
+Emails are sent via SendGrid from a verified domain (e.g., yourapp.com),
+with Reply-To set to the user's email so companies can reply directly to them.
 Caching happens on the SessionData object passed in, so it's scoped per
 user, not global."""
 import base64
@@ -8,14 +9,14 @@ import os
 import re
 
 import requests
-import re
-
-import requests
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Attachment, Content, Email, FileContent, FileName, FileType, Mail, Personalization
+from sendgrid.helpers.mail import Attachment, Content, Email, FileContent, FileName, FileType, Mail, ReplyTo
 
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+# The verified sender address in SendGrid (e.g., career-agent@yourdomain.com).
+# This is the FROM address for all emails. The user's email is set as Reply-To.
+SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "career-agent@example.com")
 
 _sendgrid_client: SendGridAPIClient | None = None
 
@@ -90,23 +91,32 @@ def get_or_fetch_emails(session, company: str) -> list[dict]:
 
 
 def send_email(
-    from_addr: str,
+    user_email: str,
     to_addr: str,
     subject: str,
     body_text: str,
     attachment_bytes: bytes | None = None,
     attachment_filename: str | None = None,
 ) -> None:
-    """Send an email via SendGrid. from_addr is the user's email address
-    (shown as the sender)."""
+    """Send an email via SendGrid. The FROM address is the verified domain
+    (SENDGRID_FROM_EMAIL), and the user's email is set as Reply-To so
+    companies can reply directly to them.
+
+    The email body is automatically prefixed with a note showing the user's
+    email so the recipient knows who it's from."""
     client = _get_sendgrid_client()
 
+    # Prepend a note showing the user's email
+    full_body = f"[Sent on behalf of {user_email}]\n\n{body_text}"
+
     mail = Mail(
-        from_email=Email(from_addr),
+        from_email=Email(SENDGRID_FROM_EMAIL),
         to_emails=Email(to_addr),
         subject=subject,
-        plain_text_content=Content("text/plain", body_text),
+        plain_text_content=Content("text/plain", full_body),
     )
+    # Set Reply-To so the company can reply directly to the user
+    mail.reply_to = ReplyTo(user_email)
 
     if attachment_bytes and attachment_filename:
         encoded = base64.b64encode(attachment_bytes).decode()
