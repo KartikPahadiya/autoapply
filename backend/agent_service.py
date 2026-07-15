@@ -15,6 +15,8 @@ actually call the sending tool once the user replies confirming — the
 "confirmation" becomes a conversational turn instead of a blocking call.
 """
 import os
+import re
+from urllib.parse import quote
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool as tool_decorator
@@ -34,13 +36,24 @@ _llm_endpoint = HuggingFaceEndpoint(
     provider="auto",
 )
 _llm = ChatHuggingFace(llm=_llm_endpoint)
+BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
+
+
+def safe_filename_part(value: str | None, fallback: str = "tailored") -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", value or "").strip("_")
+    return cleaned or fallback
 
 
 SYSTEM_PROMPT = """You are a friendly career assistant chatbot with access to these tools.
 
-The user has provided their email address and uploaded their resume. They can use all features.
+Use the dynamic session context below as the source of truth for whether the
+user's email address and resume are currently available.
 
 IMPORTANT RULES:
+- The dynamic session context is authoritative. If it says the uploaded resume
+  is available, do not ask for another resume before tailoring. If it says no
+  resume is available, explain that the current backend session cannot see the
+  uploaded resume and ask the user to upload it again.
 - When the user asks to tailor their resume, write a cover letter, make a CV, or customize their resume for ANY job description, you MUST call the tailor_resume_for_role tool IMMEDIATELY. Do NOT ask the user to upload their resume — it is already uploaded in their session. Do NOT ask for confirmation. Just call the tool.
 - When the user asks to find/search jobs, call find_matching_jobs.
 - When the user asks to look up emails, call lookup_company_email.
@@ -56,6 +69,13 @@ IMPORTANT RULES:
    company. Works against the last search results (company name or position
    number) OR standalone (company name or LinkedIn URL/pasted text) — no prior
    search required.
+   FORMAT RULE: When showing email lookup results, DO NOT use markdown tables.
+   Use one company block at a time, then bullets like:
+   Company: ExampleCo
+   - person@example.com — personal, 92% confidence, Jane Doe
+   - info@example.com — generic, 80% confidence
+   For companies with no result, write "- No public email found." This avoids
+   broken columns when one company has multiple email addresses.
 
 3. tailor_resume_for_role(job_description, company, title) — tailors the
    user's resume and writes a cover letter for a SPECIFIC role, using the
@@ -115,9 +135,14 @@ def build_session_tools(session):
         emails = email_service.get_or_fetch_emails(session, company)
         if not emails:
             return f"No public emails found for {company}."
-        lines = [f"Emails found for {company}:"]
+        lines = [f"Company: {company}"]
         for e in emails:
-            lines.append(f"- {e['value']} [{e['type']}, {e['confidence']}% confidence] {e.get('name') or 'Unknown'}")
+            details = [e.get("type") or "unknown type"]
+            if e.get("confidence") is not None:
+                details.append(f"{e['confidence']}% confidence")
+            if e.get("name"):
+                details.append(e["name"])
+            lines.append(f"- {e['value']} — {', '.join(details)}")
         return "\n".join(lines)
 
     @tool_decorator
@@ -129,16 +154,18 @@ def build_session_tools(session):
         if not tailoring_service.nvidia_configured():
             return "Resume tailoring isn't configured on the server (NVIDIA_API_KEY missing)."
         try:
-            if not mcp_tools.laddro_configured():
-                return "Resume tailoring isn't configured on the server (LADDRO_MCP_API_KEY missing)."
+            if not mcp_tools.mcp_configured():
+                return "Resume tailoring isn't configured on the server (Node.js/npx is required for CV Forge)."
             result = await tailoring_service.tailor_resume_and_cover_letter(
                 session.resume_text, job_description, company, title
             )
         except Exception as exc:
             return f"Tailoring failed: {exc}"
-        session.tailored_cache[company or "_default"] = result
-        pdf_note = result["tailored_resume_url"] or "no PDF link was returned"
-        return f"Tailored resume PDF: {pdf_note}\n\nCover letter:\n{result['cover_letter']}"
+        key = company or "_default"
+        session.tailored_cache[key] = result
+        download_url = f"{BACKEND_PUBLIC_URL}/resume/tailored/{quote(key, safe='')}/download"
+        resume_note = f"Tailored resume DOCX: {download_url}" if result.get("docx_bytes") else "Tailored resume DOCX: unavailable"
+        return f"{resume_note}\n\nCover letter:\n{result['cover_letter']}"
 
     @tool_decorator
     def email_me_results() -> str:
@@ -219,13 +246,11 @@ def build_session_tools(session):
                 except Exception:
                     tailored = None
 
-            if tailored and tailored.get("tailored_resume_url"):
-                pdf_bytes = tailoring_service.download_pdf(tailored["tailored_resume_url"])
-                if pdf_bytes:
-                    attachment_bytes = pdf_bytes
-                    attachment_filename = f"resume_{company}.pdf"
-                    used_tailored = True
-                    cover_letter_text = tailored.get("cover_letter")
+            if tailored and tailored.get("docx_bytes"):
+                attachment_bytes = tailored["docx_bytes"]
+                attachment_filename = f"resume_{safe_filename_part(company)}.docx"
+                used_tailored = True
+                cover_letter_text = tailored.get("cover_letter")
 
             subject = f"Application Interest: {title} at {company}" if title else f"Interest in Opportunities at {company}"
             body = message.strip() or cover_letter_text or (
@@ -243,7 +268,7 @@ def build_session_tools(session):
                     attachment_bytes=attachment_bytes,
                     attachment_filename=attachment_filename,
                 )
-                note = "tailored resume" if used_tailored else "generic resume (tailoring unavailable/failed)"
+                note = "tailored DOCX resume" if used_tailored else "generic resume (tailoring unavailable/failed)"
                 results.append(f"- {company}: sent to {recipient} ({note})")
             except Exception as exc:
                 results.append(f"- {company}: failed to send ({exc})")

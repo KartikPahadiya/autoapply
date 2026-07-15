@@ -11,6 +11,21 @@ const SUGGESTIONS = [
   "Email me my last search results",
 ];
 
+function MarkdownLink({ href = "", children, ...props }) {
+  const isExternal = /^https?:\/\//i.test(href);
+
+  return (
+    <a
+      href={href}
+      target={isExternal ? "_blank" : undefined}
+      rel={isExternal ? "noopener noreferrer" : undefined}
+      {...props}
+    >
+      {children}
+    </a>
+  );
+}
+
 export default function Chat({ email, onSignOut, onSetEmail }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -149,7 +164,9 @@ export default function Chat({ email, onSignOut, onSetEmail }) {
               {m.role === "user" ? (
                 m.content
               ) : (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: MarkdownLink }}>
+                  {m.content}
+                </ReactMarkdown>
               )}
             </div>
           </div>

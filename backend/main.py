@@ -11,6 +11,7 @@ Run locally:
 """
 import asyncio
 import os
+import re
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -30,7 +31,13 @@ from session_store import SESSION_COOKIE_NAME, SESSION_TTL_SECONDS, SessionData,
 
 
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"  # set false only for local http testing
+_cookie_secure_env = os.getenv("COOKIE_SECURE")
+COOKIE_SECURE = (
+    _cookie_secure_env.lower() == "true"
+    if _cookie_secure_env is not None
+    else not FRONTEND_ORIGIN.startswith(("http://localhost", "http://127.0.0.1"))
+)
+DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 app = FastAPI(title="Career Agent Backend")
 
@@ -41,6 +48,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def safe_filename_part(value: str | None, fallback: str = "tailored") -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", value or "").strip("_")
+    return cleaned or fallback
 
 
 # ---------------------------------------------------------------------------
@@ -170,6 +182,8 @@ async def tailor_resume(body: TailorRequest, request: Request, response: Respons
     return {
         "cover_letter": result["cover_letter"],
         "tailored_resume_url": result["tailored_resume_url"],
+        "tailored_resume_download_url": f"/resume/tailored/{key}/download",
+        "tailored_resume_format": "docx",
         "download_key": key,
     }
 
@@ -178,15 +192,13 @@ async def tailor_resume(body: TailorRequest, request: Request, response: Respons
 def download_tailored_resume(key: str, request: Request, response: Response):
     _, session = get_or_create_session(request, response)
     cached = session.tailored_cache.get(key)
-    if not cached or not cached.get("tailored_resume_url"):
+    if not cached or not cached.get("docx_bytes"):
         raise HTTPException(404, "No tailored resume found for that key.")
-    pdf_bytes = tailoring_service.download_pdf(cached["tailored_resume_url"])
-    if not pdf_bytes:
-        raise HTTPException(502, "Couldn't fetch the tailored resume PDF.")
+    filename = f"tailored_resume_{safe_filename_part(key)}.docx"
     return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="tailored_resume_{key}.pdf"'},
+        content=cached["docx_bytes"],
+        media_type=DOCX_MEDIA_TYPE,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -324,7 +336,7 @@ async def cold_email_preview(body: ColdEmailPreviewRequest, request: Request, re
                 "suitable opportunities.\n\nThanks for your time,\n"
             )
 
-        tailored_resume_url = None
+        tailored_resume_key = None
         note = "using generic resume (no job description available to tailor from)"
         if jd and tailoring_service.nvidia_configured():
             try:
@@ -332,10 +344,10 @@ async def cold_email_preview(body: ColdEmailPreviewRequest, request: Request, re
                     session.resume_text or "", jd, company, title or ""
                 )
                 session.tailored_cache[company] = tailored
-                if tailored.get("tailored_resume_url"):
-                    tailored_resume_url = tailored["tailored_resume_url"]
+                if tailored.get("docx_bytes"):
+                    tailored_resume_key = company
                     default_body = tailored["cover_letter"] or default_body
-                    note = "tailored resume + cover letter generated"
+                    note = "tailored DOCX resume + cover letter generated"
                 else:
                     note = "tailoring ran but returned no PDF — using generic resume"
             except Exception as exc:
@@ -347,7 +359,8 @@ async def cold_email_preview(body: ColdEmailPreviewRequest, request: Request, re
                 "recipient": best["value"],
                 "subject": subject,
                 "body": body.message.strip() or default_body,
-                "tailored_resume_url": tailored_resume_url,
+                "tailored_resume_key": tailored_resume_key,
+                "tailored_resume_format": "docx" if tailored_resume_key else None,
                 "note": note,
             }
         )
@@ -376,13 +389,12 @@ def cold_email_send(body: ColdEmailSendRequest, request: Request, response: Resp
         attachment_bytes = session.resume_bytes
         attachment_filename = session.resume_filename
         used_tailored = False
-        tailored_url = item.get("tailored_resume_url")
-        if tailored_url:
-            pdf_bytes = tailoring_service.download_pdf(tailored_url)
-            if pdf_bytes:
-                attachment_bytes = pdf_bytes
-                attachment_filename = f"resume_{item.get('company', 'tailored')}.pdf"
-                used_tailored = True
+        tailored_key = item.get("tailored_resume_key") or item.get("company")
+        tailored = session.tailored_cache.get(tailored_key) if tailored_key else None
+        if tailored and tailored.get("docx_bytes"):
+            attachment_bytes = tailored["docx_bytes"]
+            attachment_filename = f"resume_{safe_filename_part(item.get('company'), 'tailored')}.docx"
+            used_tailored = True
 
         try:
             email_service.send_email(

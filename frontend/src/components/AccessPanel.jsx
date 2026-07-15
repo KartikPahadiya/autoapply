@@ -42,6 +42,10 @@ export default function AccessPanel({
     setUploading(true);
     try {
       await api.uploadResume(file);
+      const status = await api.resumeStatus();
+      if (!status.has_resume) {
+        throw new Error("Resume uploaded, but your browser did not keep the backend session. Check COOKIE_SECURE=false for local HTTP and try again.");
+      }
       setFileName(file.name);
       onResumeUploaded(file.name);
     } catch (err) {

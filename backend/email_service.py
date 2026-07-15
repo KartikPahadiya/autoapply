@@ -26,6 +26,15 @@ SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "career-agent@example.com
 _sendgrid_client: SendGridAPIClient | None = None
 
 
+def _attachment_file_type(filename: str) -> str:
+    lower = filename.lower()
+    if lower.endswith(".pdf"):
+        return "application/pdf"
+    if lower.endswith(".docx"):
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    return "application/octet-stream"
+
+
 def _get_sendgrid_client() -> SendGridAPIClient:
     global _sendgrid_client
     if _sendgrid_client is None:
@@ -145,7 +154,7 @@ def _send_via_sendgrid(
         attachment = Attachment(
             FileContent(encoded),
             FileName(attachment_filename),
-            FileType("application/pdf" if attachment_filename.endswith(".pdf") else "application/octet-stream"),
+            FileType(_attachment_file_type(attachment_filename)),
             "attachment",
         )
         mail.add_attachment(attachment)

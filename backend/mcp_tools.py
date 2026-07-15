@@ -1,55 +1,54 @@
 """
-Loads the Laddro Career MCP server's tools (resume tailoring, cover
-letter generation, PDF export, etc.) as real LangChain tools, via the
-official langchain-mcp-adapters package — not a hand-rolled MCP client.
+Connects to the CV Forge MCP server (self-hosted via npm).
 
-Loaded once and cached for the whole process: this is the app's own
-Laddro/Smithery account (one bearer token from .env), not per-user data,
-so sharing the connection across sessions is fine — same treatment as the
-Apify/Hunter/HuggingFace credentials elsewhere in this backend.
+No API key needed. The server auto-installs via npx and runs locally
+on stdio transport. Requires Node.js 18+ installed.
 
-NOTE: the exact tool names/schemas this server exposes aren't hardcoded
-here on purpose — get_laddro_tools() just returns whatever the server
-advertises, and the sub-agent in tailoring_service.py is the one that
-reads each tool's description and decides how to call it. If you know the
-exact tool names (e.g. from docs.laddro.com/docs/mcp) and want tighter,
-non-agentic control, you can call the LangChain tool objects returned
-here directly by name instead of going through the agent.
+Tools available:
+- draft_complete_application — generates CV PDF + cover letter + email
+- generate_cv — generates tailored CV
+- generate_cover_letter — generates cover letter
+- parse_job_requirements — extracts skills from JD
 """
 import os
+import shutil
 
 from langchain_mcp_adapters.client import MultiServerMCPClient
-
-LADDRO_MCP_URL = os.getenv("LADDRO_MCP_URL", "https://mcp.smithery.run/kartikpahadiya122004")
-LADDRO_MCP_API_KEY = os.getenv("LADDRO_MCP_API_KEY")
 
 _client: MultiServerMCPClient | None = None
 _tools_cache = None
 
 
-def laddro_configured() -> bool:
-    return bool(LADDRO_MCP_API_KEY)
+def _has_node() -> bool:
+    return shutil.which("node") is not None or shutil.which("npx") is not None
+
+
+def mcp_configured() -> bool:
+    return _has_node()
 
 
 def _get_client() -> MultiServerMCPClient:
     global _client
     if _client is None:
-        if not laddro_configured():
-            raise RuntimeError("LADDRO_MCP_API_KEY is not set in .env — Laddro Career tools are unavailable.")
+        if not _has_node():
+            raise RuntimeError(
+                "Node.js is not installed. CV Forge MCP server requires Node.js 18+.\n"
+                "Download from https://nodejs.org/ and restart the backend."
+            )
         _client = MultiServerMCPClient(
             {
-                "laddro_career": {
-                    "transport": "streamable_http",
-                    "url": LADDRO_MCP_URL,
-                    "headers": {"Authorization": f"Bearer {LADDRO_MCP_API_KEY}"},
+                "cv_forge": {
+                    "transport": "stdio",
+                    "command": "npx",
+                    "args": ["-y", "cv-forge"],
                 }
             }
         )
     return _client
 
 
-async def get_laddro_tools():
-    """Fetch (and cache) the Laddro Career MCP tools as LangChain tools."""
+async def get_mcp_tools():
+    """Fetch (and cache) the MCP tools as LangChain tools."""
     global _tools_cache
     if _tools_cache is None:
         client = _get_client()
