@@ -62,108 +62,111 @@ export default function AccessPanel({
         </p>
 
         <div className="access-card">
-          {/* Dedicated vertical progress track on the left */}
-          <div className="access-track">
-            <div className={`access-track-dot ${email ? "done" : ""}`} />
-            <div className={`access-track-line ${email ? "filled" : ""}`} />
-            <div className={`access-track-dot ${resumeUploaded ? "done" : ""}`} />
-          </div>
-
-          {/* Step content on the right */}
-          <div className="access-steps">
-            {/* Step 1 — Email + App Password */}
-            <div className="access-step">
-              <div className="access-step-body">
-                <p className={`access-step-label ${email ? "done" : ""}`}>
-                  {email ? "Saved" : "Step 1"}
-                </p>
-                <h2 className="access-step-title">Your Gmail & App Password</h2>
-                <p className="access-step-desc">
-                  We use your Gmail's App Password to send emails directly from your address. Your real password is never used.
-                </p>
-
-                {email ? (
-                  <p className="access-signed-in">{email}</p>
-                ) : (
-                  <>
-                    <form onSubmit={handleSaveEmail} className="access-email-form">
-                      <input
-                        type="email"
-                        className="access-email-input"
-                        placeholder="you@gmail.com"
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        disabled={savingEmail || !authChecked}
-                      />
-                      <input
-                        type="password"
-                        className="access-email-input"
-                        placeholder="Gmail App Password (16 chars)"
-                        value={smtpPassword}
-                        onChange={(e) => setSmtpPassword(e.target.value)}
-                        disabled={savingEmail || !authChecked}
-                      />
-                      <button className="access-btn" type="submit" disabled={savingEmail || !emailInput.trim()}>
-                        {savingEmail ? "Saving…" : "Save email →"}
-                      </button>
-                    </form>
-
-                    <div className="access-instructions">
-                      <p className="access-instructions-title">How to get your Gmail App Password:</p>
-                      <ol className="access-instructions-list">
-                        <li>
-                          Go to{" "}
-                          <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">
-                            Google Account → Security → App Passwords
-                          </a>
-                        </li>
-                        <li>
-                          Sign in if asked. Make sure <strong>2-Step Verification is ON</strong> (required for App Passwords).
-                        </li>
-                        <li>
-                          Click <strong>"Select app"</strong> → choose <strong>"Other (Custom name)"</strong>
-                        </li>
-                        <li>
-                          Type <strong>"Career Agent"</strong> and click <strong>"Generate"</strong>
-                        </li>
-                        <li>
-                          Copy the <strong>16-character code</strong> (e.g., <code>abcd efgh ijkl mnop</code>) and paste it above
-                        </li>
-                      </ol>
-                      <p className="access-instructions-note">
-                        ⚠️ This is <strong>not</strong> your Gmail password. It's a separate app-specific password. Google only shows it once — copy it immediately.
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
+          {/* Track + steps together at top, don't stretch full height */}
+          <div className="access-body">
+            {/* Dedicated vertical progress track on the left */}
+            <div className="access-track">
+              <div className={`access-track-dot ${email ? "done" : ""}`} />
+              <div className={`access-track-line ${email ? "filled" : ""}`} />
+              <div className={`access-track-dot ${resumeUploaded ? "done" : ""}`} />
             </div>
 
-            {/* Step 2 — Resume */}
-            <div className="access-step">
-              <div className="access-step-body">
-                <p className={`access-step-label ${resumeUploaded ? "done" : ""}`}>
-                  {resumeUploaded ? "Uploaded" : "Step 2"}
-                </p>
-                <h2 className="access-step-title">Resume</h2>
-                <p className="access-step-desc">
-                  PDF or DOCX. Used to match you against job listings and tailor your resume for specific roles.
-                </p>
-                <button
-                  className={`access-btn ${resumeUploaded ? "done" : ""}`}
-                  onClick={handleFilePick}
-                  disabled={uploading}
-                >
-                  {uploading ? "Uploading…" : resumeUploaded ? "Replace resume" : "Upload resume →"}
-                </button>
-                <input
-                  ref={fileInput}
-                  type="file"
-                  accept=".pdf,.docx"
-                  className="access-file-input"
-                  onChange={handleFileChange}
-                />
-                {fileName && <p className="access-hint">{fileName}</p>}
+            {/* Step content on the right */}
+            <div className="access-steps">
+              {/* Step 1 — Email + App Password */}
+              <div className="access-step">
+                <div className="access-step-body">
+                  <p className={`access-step-label ${email ? "done" : ""}`}>
+                    {email ? "Saved" : "Step 1"}
+                  </p>
+                  <h2 className="access-step-title">Your Gmail & App Password</h2>
+                  <p className="access-step-desc">
+                    We use your Gmail's App Password to send emails directly from your address. Your real password is never used.
+                  </p>
+
+                  {email ? (
+                    <p className="access-signed-in">{email}</p>
+                  ) : (
+                    <>
+                      <form onSubmit={handleSaveEmail} className="access-email-form">
+                        <input
+                          type="email"
+                          className="access-email-input"
+                          placeholder="you@gmail.com"
+                          value={emailInput}
+                          onChange={(e) => setEmailInput(e.target.value)}
+                          disabled={savingEmail || !authChecked}
+                        />
+                        <input
+                          type="password"
+                          className="access-email-input"
+                          placeholder="Gmail App Password (16 chars)"
+                          value={smtpPassword}
+                          onChange={(e) => setSmtpPassword(e.target.value)}
+                          disabled={savingEmail || !authChecked}
+                        />
+                        <button className="access-btn" type="submit" disabled={savingEmail || !emailInput.trim()}>
+                          {savingEmail ? "Saving…" : "Save email →"}
+                        </button>
+                      </form>
+
+                      <div className="access-instructions">
+                        <p className="access-instructions-title">How to get your Gmail App Password:</p>
+                        <ol className="access-instructions-list">
+                          <li>
+                            Go to{" "}
+                            <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">
+                              Google Account → Security → App Passwords
+                            </a>
+                          </li>
+                          <li>
+                            Sign in if asked. Make sure <strong>2-Step Verification is ON</strong> (required for App Passwords).
+                          </li>
+                          <li>
+                            Click <strong>"Select app"</strong> → choose <strong>"Other (Custom name)"</strong>
+                          </li>
+                          <li>
+                            Type <strong>"Career Agent"</strong> and click <strong>"Generate"</strong>
+                          </li>
+                          <li>
+                            Copy the <strong>16-character code</strong> (e.g., <code>abcd efgh ijkl mnop</code>) and paste it above
+                          </li>
+                        </ol>
+                        <p className="access-instructions-note">
+                          ⚠️ This is <strong>not</strong> your Gmail password. It's a separate app-specific password. Google only shows it once — copy it immediately.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2 — Resume */}
+              <div className="access-step">
+                <div className="access-step-body">
+                  <p className={`access-step-label ${resumeUploaded ? "done" : ""}`}>
+                    {resumeUploaded ? "Uploaded" : "Step 2"}
+                  </p>
+                  <h2 className="access-step-title">Resume</h2>
+                  <p className="access-step-desc">
+                    PDF or DOCX. Used to match you against job listings and tailor your resume for specific roles.
+                  </p>
+                  <button
+                    className={`access-btn ${resumeUploaded ? "done" : ""}`}
+                    onClick={handleFilePick}
+                    disabled={uploading}
+                  >
+                    {uploading ? "Uploading…" : resumeUploaded ? "Replace resume" : "Upload resume →"}
+                  </button>
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept=".pdf,.docx"
+                    className="access-file-input"
+                    onChange={handleFileChange}
+                  />
+                  {fileName && <p className="access-hint">{fileName}</p>}
+                </div>
               </div>
             </div>
           </div>

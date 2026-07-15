@@ -37,15 +37,22 @@
   max-width: 40ch;
 }
 
-/* Card: track on left, steps on right */
+/* Card: column layout — body on top, status bar below */
 .access-card {
   background: var(--panel);
   border: 1px solid var(--panel-line);
   border-radius: 10px;
   padding: 28px 24px 24px;
   display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Body: row layout — track on left, steps on right */
+.access-body {
+  display: flex;
   gap: 16px;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 /* Vertical track with two dots and a connecting line */
@@ -247,7 +254,7 @@
 }
 
 .access-status-bar {
-  margin-top: 22px;
+  margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid var(--panel-line);
   display: flex;
