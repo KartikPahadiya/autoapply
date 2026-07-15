@@ -28,14 +28,22 @@ import job_service
 import mcp_tools
 import tailoring_service
 
-_llm_endpoint = HuggingFaceEndpoint(
-    repo_id="openai/gpt-oss-120b",
-    task="text-generation",
-    max_new_tokens=1024,
-    do_sample=False,
-    provider="auto",
-)
-_llm = ChatHuggingFace(llm=_llm_endpoint)
+# _llm_endpoint = HuggingFaceEndpoint(
+#     repo_id="openai/gpt-oss-120b",
+#     task="text-generation",
+#     max_new_tokens=1024,
+#     do_sample=False,
+#     provider="auto",
+# )
+# _llm = ChatHuggingFace(llm=_llm_endpoint)
+_llm = None
+
+def get_llm():
+    global _llm
+    if _llm is None:
+        endpoint = HuggingFaceEndpoint(...)
+        _llm = ChatHuggingFace(llm=endpoint)
+    return _llm
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
 
 
