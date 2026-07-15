@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "../api.js";
 import "./Chat.css";
 
@@ -92,7 +94,13 @@ export default function Chat({ email, onSignOut }) {
         {messages.map((m, i) => (
           <div key={i} className={`msg-row ${m.role}`}>
             <div className="msg-avatar">{m.role === "user" ? "YOU" : m.role === "error" ? "!" : "AI"}</div>
-            <div className="msg-bubble">{m.content}</div>
+            <div className="msg-bubble">
+              {m.role === "user" ? (
+                m.content
+              ) : (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+              )}
+            </div>
           </div>
         ))}
 

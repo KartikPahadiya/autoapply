@@ -160,13 +160,138 @@
   padding: 12px 15px;
   font-size: 14px;
   line-height: 1.55;
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Markdown rendering inside agent bubbles */
+.msg-bubble h1,
+.msg-bubble h2,
+.msg-bubble h3,
+.msg-bubble h4 {
+  font-family: var(--font-display);
+  color: var(--paper);
+  margin: 14px 0 8px;
+  font-weight: 600;
+}
+
+.msg-bubble h1 { font-size: 18px; }
+.msg-bubble h2 { font-size: 16px; }
+.msg-bubble h3 { font-size: 15px; }
+.msg-bubble h4 { font-size: 14px; }
+
+.msg-bubble p {
+  margin: 0 0 10px;
+}
+
+.msg-bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.msg-bubble strong,
+.msg-bubble b {
+  color: var(--brass-bright);
+  font-weight: 600;
+}
+
+.msg-bubble em,
+.msg-bubble i {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.msg-bubble ul,
+.msg-bubble ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.msg-bubble li {
+  margin: 4px 0;
+}
+
+.msg-bubble a {
+  color: var(--brass-bright);
+  text-decoration: underline;
+}
+
+.msg-bubble a:hover {
+  color: var(--brass);
+}
+
+.msg-bubble code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--ink-deep);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--brass-bright);
+}
+
+.msg-bubble pre {
+  background: var(--ink-deep);
+  border: 1px solid var(--panel-line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.msg-bubble pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--muted);
+}
+
+.msg-bubble blockquote {
+  border-left: 3px solid var(--brass);
+  margin: 10px 0;
+  padding-left: 12px;
+  color: var(--muted);
+}
+
+/* Tables */
+.msg-bubble table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.msg-bubble th,
+.msg-bubble td {
+  border: 1px solid var(--panel-line);
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.msg-bubble th {
+  background: var(--panel-raised);
+  color: var(--brass-bright);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.msg-bubble tr:nth-child(even) {
+  background: rgba(201, 154, 68, 0.04);
+}
+
+.msg-bubble tr:hover {
+  background: rgba(201, 154, 68, 0.08);
+}
+
+.msg-bubble hr {
+  border: none;
+  border-top: 1px solid var(--panel-line);
+  margin: 14px 0;
 }
 
 .msg-row.user .msg-bubble {
   background: var(--panel-raised);
   border-color: var(--panel-line);
+  white-space: pre-wrap;
 }
 
 .msg-row.agent .msg-bubble {
