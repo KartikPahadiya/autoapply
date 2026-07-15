@@ -38,7 +38,12 @@ export default function Chat({ email, onSignOut }) {
     requestAnimationFrame(resizeTextarea);
     try {
       const { reply } = await api.chat(trimmed);
-      setMessages((m) => [...m, { role: "agent", content: reply }]);
+      // The LLM sometimes outputs raw HTML <br> tags; convert them to
+      // actual newlines so react-markdown renders them properly.
+      const cleaned = reply
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/\n\s*\n/g, "\n\n");
+      setMessages((m) => [...m, { role: "agent", content: cleaned }]);
     } catch (err) {
       setMessages((m) => [...m, { role: "error", content: err.message || "Something went wrong reaching the agent." }]);
     } finally {
