@@ -18,7 +18,16 @@ APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
 
 # Loaded once at process startup and shared read-only across all sessions —
 # this is a stateless model, not per-user data, so sharing it is fine.
-_embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+_embeddings = None
+
+def get_embeddings():
+    global _embeddings
+    if _embeddings is None:
+        _embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+    return _embeddings
 
 # In-memory Chroma client (no persist_directory => RAM only, gone on restart).
 _chroma_client = chromadb.Client()
@@ -30,7 +39,7 @@ def _get_session_vector_store(session) -> Chroma:
     return Chroma(
         client=_chroma_client,
         collection_name=session.vector_collection_name,
-        embedding_function=_embeddings,
+        embedding_function=get_embeddings(),
     )
 
 
