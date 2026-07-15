@@ -19,6 +19,7 @@ load_dotenv()
 from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from langchain_core.messages import HumanMessage, SystemMessage
 
 import agent_service
 import email_service
@@ -439,3 +440,112 @@ def custom_email_send(body: CustomEmailRequest, request: Request, response: Resp
     except Exception as exc:
         raise HTTPException(500, f"Failed to send: {exc}")
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Diagnostic / test endpoints
+# ---------------------------------------------------------------------------
+@app.get("/test/config")
+def test_config():
+    """Return which API keys and services are configured."""
+    import email_service
+    import mcp_tools
+    import tailoring_service
+    return {
+        "hunter_io": bool(email_service.HUNTER_API_KEY),
+        "sendgrid": email_service.sendgrid_configured(),
+        "sendgrid_from_email": email_service.SENDGRID_FROM_EMAIL,
+        "laddro_mcp": mcp_tools.laddro_configured(),
+        "laddro_mcp_url": mcp_tools.LADDRO_MCP_URL,
+        "nvidia": tailoring_service.nvidia_configured(),
+    }
+
+
+class TestTailorRequest(BaseModel):
+    resume_text: str = "Python developer with 3 years of experience in machine learning and NLP."
+    job_description: str = "We are looking for a Senior ML Engineer with expertise in Python, PyTorch, and NLP."
+
+
+@app.post("/test/tailor")
+async def test_tailor(body: TestTailorRequest, request: Request, response: Response):
+    """Run the Laddro MCP tailoring pipeline with a small test input and
+    return detailed diagnostics — tool list, raw agent responses, and
+    parsed results. Use this to debug why tailoring is failing."""
+    import mcp_tools
+    import tailoring_service
+
+    diagnostics = {
+        "credentials": {},
+        "tool_list": [],
+        "agent_run": {},
+        "parsed_result": {},
+    }
+
+    # 1. Check credentials
+    diagnostics["credentials"] = {
+        "nvidia_api_key_set": bool(os.getenv("NVIDIA_API_KEY")),
+        "laddro_mcp_api_key_set": mcp_tools.laddro_configured(),
+        "laddro_mcp_url": mcp_tools.LADDRO_MCP_URL,
+    }
+
+    if not diagnostics["credentials"]["nvidia_api_key_set"]:
+        raise HTTPException(500, "NVIDIA_API_KEY is not set in .env")
+    if not diagnostics["credentials"]["laddro_mcp_api_key_set"]:
+        raise HTTPException(500, "LADDRO_MCP_API_KEY is not set in .env")
+
+    # 2. Try to list tools from Laddro MCP server
+    try:
+        tools = await mcp_tools.get_laddro_tools()
+        diagnostics["tool_list"] = [t.name for t in tools]
+        diagnostics["tool_count"] = len(tools)
+    except Exception as exc:
+        diagnostics["tool_list_error"] = str(exc)
+        raise HTTPException(500, f"Failed to connect to Laddro MCP server: {exc}")
+
+    # 3. Run the tailoring agent with the test input
+    try:
+        result = await tailoring_service.tailor_resume_and_cover_letter(
+            body.resume_text, body.job_description, company="TestCo", title="Test Role"
+        )
+        diagnostics["parsed_result"] = result
+    except Exception as exc:
+        diagnostics["agent_run_error"] = str(exc)
+        raise HTTPException(500, f"Tailoring agent failed: {exc}")
+
+    # 4. Also try to get the raw agent messages for deeper inspection
+    try:
+        agent = await tailoring_service._get_tailoring_agent()
+        user_prompt = (
+            f"Candidate resume:\n{body.resume_text}\n\n"
+            f"Target job description:\n{body.job_description}\n\n"
+            "Call the Laddro tools in order: (1) laddro.resumes.tailor, "
+            "(2) laddro.resumes.export, (3) laddro.coverLetters.generate. "
+            "Then return ONLY the JSON with pdf_url and cover_letter."
+        )
+        raw_result = await agent.ainvoke(
+            {"messages": [
+                SystemMessage(content=tailoring_service.TAILORING_SYSTEM_PROMPT),
+                HumanMessage(content=user_prompt)
+            ]}
+        )
+        messages = raw_result["messages"]
+        diagnostics["agent_run"] = {
+            "message_count": len(messages),
+            "messages": [],
+        }
+        for i, msg in enumerate(messages):
+            msg_info = {
+                "index": i,
+                "type": type(msg).__name__,
+                "content_preview": str(msg.content)[:500] if hasattr(msg, "content") else "N/A",
+            }
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                msg_info["tool_calls"] = [
+                    {"name": tc.get("name"), "args_preview": str(tc.get("args", {}))[:200]}
+                    for tc in msg.tool_calls
+                ]
+            diagnostics["agent_run"]["messages"].append(msg_info)
+    except Exception as exc:
+        diagnostics["raw_agent_error"] = str(exc)
+
+    return diagnostics
