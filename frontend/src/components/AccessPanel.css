@@ -79,6 +79,12 @@
   box-shadow: 0 0 0 4px rgba(201, 154, 68, 0.18), 0 0 14px rgba(224, 184, 102, 0.55);
 }
 
+.access-light.optional {
+  border-color: var(--muted-dim);
+  background: var(--panel-raised);
+  opacity: 0.6;
+}
+
 .access-trace {
   width: 2px;
   flex: 1;
@@ -168,6 +174,20 @@
 }
 
 .access-btn.done:hover {
+  background: transparent;
+  color: var(--signal-green);
+}
+
+.access-btn.ghost {
+  border-color: var(--panel-line);
+  color: var(--muted);
+}
+
+.access-btn.ghost:hover:not(:disabled) {
+  background: var(--panel-raised);
+  color: var(--paper);
+  border-color: var(--muted-dim);
+}
   background: transparent;
   color: var(--signal-green);
 }

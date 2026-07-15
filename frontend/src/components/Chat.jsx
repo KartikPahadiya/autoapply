@@ -4,19 +4,27 @@ import remarkGfm from "remark-gfm";
 import { api } from "../api.js";
 import "./Chat.css";
 
-const SUGGESTIONS = [
+const SUGGESTIONS_ALL = [
   "Find product manager jobs in Austin",
   "Tailor my resume for this job description: …",
   "Look up emails for the top match",
   "Email me my last search results",
 ];
 
-export default function Chat({ email, onSignOut }) {
+const SUGGESTIONS_GUEST = [
+  "Find AI engineer jobs remote",
+  "Tailor my resume for this job description: …",
+  "Look up emails for Apple",
+];
+
+export default function Chat({ email, loggedIn, onSignOut }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bodyRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const suggestions = loggedIn ? SUGGESTIONS_ALL : SUGGESTIONS_GUEST;
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
@@ -38,8 +46,6 @@ export default function Chat({ email, onSignOut }) {
     requestAnimationFrame(resizeTextarea);
     try {
       const { reply } = await api.chat(trimmed);
-      // The LLM sometimes outputs raw HTML <br> tags; convert them to
-      // actual newlines so react-markdown renders them properly.
       const cleaned = reply
         .replace(/<br\s*\/?>/gi, "\n")
         .replace(/\n\s*\n/g, "\n\n");
@@ -63,6 +69,10 @@ export default function Chat({ email, onSignOut }) {
     }
   };
 
+  const handleConnectGmail = () => {
+    window.location.href = api.googleLoginUrl();
+  };
+
   return (
     <div className="console">
       <header className="console-header">
@@ -70,12 +80,21 @@ export default function Chat({ email, onSignOut }) {
           <span className="console-dot" />
           <div>
             <p className="console-title">Career Agent</p>
-            <p className="console-status">Signed in as {email}</p>
+            <p className="console-status">
+              {loggedIn ? `Signed in as ${email}` : "Guest mode · Connect Gmail to send emails"}
+            </p>
           </div>
         </div>
-        <button className="console-signout" onClick={onSignOut}>
-          Sign out
-        </button>
+        <div className="console-header-right">
+          {!loggedIn && (
+            <button className="console-connect" onClick={handleConnectGmail}>
+              Connect Gmail
+            </button>
+          )}
+          <button className="console-signout" onClick={onSignOut}>
+            {loggedIn ? "Sign out" : "Exit"}
+          </button>
+        </div>
       </header>
 
       <div className="console-body" ref={bodyRef}>
@@ -83,11 +102,13 @@ export default function Chat({ email, onSignOut }) {
           <div className="console-empty">
             <h3>Clearance confirmed. Where should we start?</h3>
             <p>
-              Ask it to search jobs, look up a company's email, tailor your resume for a role, or send outreach —
-              it'll always show you a preview and wait for your go-ahead before sending anything.
+              Ask it to search jobs, look up a company's email, or tailor your resume for a role.
+              {loggedIn
+                ? " You can also send outreach emails when you're ready."
+                : " Connect Gmail anytime if you want to send emails later."}
             </p>
             <div className="console-suggestions">
-              {SUGGESTIONS.map((s) => (
+              {suggestions.map((s) => (
                 <button key={s} className="console-suggestion" onClick={() => send(s)}>
                   {s}
                 </button>

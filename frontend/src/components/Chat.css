@@ -46,6 +46,28 @@
   margin: 1px 0 0;
 }
 
+.console-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.console-connect {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--brass);
+  border: none;
+  color: var(--ink-deep);
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.console-connect:hover {
+  background: var(--brass-bright);
+}
+
 .console-signout {
   font-family: var(--font-mono);
   font-size: 12px;
