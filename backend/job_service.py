@@ -18,15 +18,16 @@ APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
 HF_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HF_TOKEN")
 
 # Loaded once at process startup and shared read-only across all sessions —
-# this is a stateless model, not per-user data, so sharing it is fine.
-# _embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+# calls HF's hosted Inference API instead of running the model locally, so
+# no torch/sentence-transformers weights are loaded into server RAM.
 _embeddings = None
 
 def get_embeddings():
     global _embeddings
     if _embeddings is None:
-        _embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        _embeddings = HuggingFaceEndpointEmbeddings(
+            model="sentence-transformers/all-MiniLM-L6-v2",
+            huggingfacehub_api_token=HF_TOKEN,
         )
     return _embeddings
 
