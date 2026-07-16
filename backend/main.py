@@ -94,6 +94,18 @@ async def _warm_up_llm():
     asyncio.create_task(warmup())
 
 
+@app.on_event("startup")
+async def _warm_up_embeddings():
+    async def warmup():
+        try:
+            embeddings = job_service.get_embeddings()
+            await asyncio.to_thread(embeddings.embed_query, "warmup")
+        except Exception as exc:
+            print(f"Embeddings warmup failed (non-fatal): {exc}")
+
+    asyncio.create_task(warmup())
+
+
 # ---------------------------------------------------------------------------
 # Auth (simple email-based, no OAuth)
 # ---------------------------------------------------------------------------
