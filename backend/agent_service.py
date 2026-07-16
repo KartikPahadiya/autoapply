@@ -17,7 +17,9 @@ actually call the sending tool once the user replies confirming — the
 import os
 import re
 from urllib.parse import quote
-
+import asyncio
+import os
+import re
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool as tool_decorator
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
@@ -351,9 +353,22 @@ async def chat(session, message: str) -> str:
     dynamic_prompt = SYSTEM_PROMPT + "\n".join(context_lines)
 
     session.chat_history.append(HumanMessage(content=message))
-    result = await agent.ainvoke(
-        {"messages": [SystemMessage(content=dynamic_prompt)] + session.chat_history}
-    )
+
+    last_exc = None
+    result = None
+    for attempt in range(3):
+        try:
+            result = await agent.ainvoke(
+                {"messages": [SystemMessage(content=dynamic_prompt)] + session.chat_history}
+            )
+            break
+        except Exception as exc:
+            last_exc = exc
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)  # 1s, 2s backoff
+    if result is None:
+        raise last_exc
+
     reply = result["messages"][-1]
     session.chat_history.append(AIMessage(content=reply.content))
     return reply.content
