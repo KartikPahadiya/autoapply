@@ -30,7 +30,7 @@ import tailoring_service
 from session_store import SESSION_COOKIE_NAME, SESSION_TTL_SECONDS, SessionData, store
 
 
-# FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 _cookie_secure_env = os.getenv("COOKIE_SECURE")
 COOKIE_SECURE = (
     _cookie_secure_env.lower() == "true"
