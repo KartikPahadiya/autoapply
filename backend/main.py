@@ -220,7 +220,10 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat_endpoint(body: ChatRequest, request: Request, response: Response):
     _, session = get_or_create_session(request, response)
-    reply = await agent_service.chat(session, body.message)
+    try:
+        reply = await agent_service.chat(session, body.message)
+    except Exception as exc:
+        raise HTTPException(502, f"The AI service is temporarily unavailable, please try again: {exc}")
     return {"reply": reply}
 
 
