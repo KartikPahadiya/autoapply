@@ -50,10 +50,7 @@ def get_llm():
             provider="auto",
         )
 
-        _llm = ChatHuggingFace(llm=endpoint).with_retry(
-            stop_after_attempt=3,
-            wait_exponential_jitter=True,
-        )
+        _llm = ChatHuggingFace(llm=endpoint)
 
     return _llm
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
