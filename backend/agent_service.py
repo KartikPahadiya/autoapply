@@ -84,17 +84,12 @@ IMPORTANT RULES:
    appear verbatim in the tool's output — never invent any. Show every job
    the tool returned, not a subset of your choosing.
 
-2. lookup_company_email(company_or_position) — looks up public emails for a
-   company. Works against the last search results (company name or position
-   number) OR standalone (company name or LinkedIn URL/pasted text) — no prior
-   search required.
-   FORMAT RULE: When showing email lookup results, DO NOT use markdown tables.
-   Use one company block at a time, then bullets like:
-   Company: ExampleCo
-   - person@example.com — personal, 92% confidence, Jane Doe
-   - info@example.com — generic, 80% confidence
-   For companies with no result, write "- No public email found." This avoids
-   broken columns when one company has multiple email addresses.
+2. get_job_description(company_or_title) — returns the full job description
+   for a job from the last search results, identified by position number,
+   company name, or part of the job title. Use this whenever the user asks
+   to see/show the job description or JD for a role from recent search
+   results — never say you can't access it, this tool has the full text
+   already scraped.
 
 3. tailor_resume_for_role(job_description, company, title) — tailors the
    user's resume and writes a cover letter for a SPECIFIC role, using the
@@ -316,15 +311,30 @@ def build_session_tools(session):
             return f"Failed to send: {exc}"
         return f"Sent to {to}."
 
+    @tool_decorator
+    def get_job_description(company_or_title: str) -> str:
+        """Return the full job description for a job from the last search
+        results — identify it by position number, company name, or a
+        distinctive part of the job title."""
+        if not session.last_matches:
+            return "No recent job search results to look up. Ask the user to search for jobs first."
+        match = job_service.resolve_job_match(company_or_title, session.last_matches)
+        if not match:
+            return f"Couldn't find a unique match for '{company_or_title}' in the last search results. Ask the user to clarify which job (e.g. by number)."
+        description = match.get("description", "").strip()
+        if not description:
+            return f"No full description is available for {match['title']} at {match['company']} — only a short summary was captured."
+        return f"{match['title']} at {match['company']} ({match['location']})\n\n{description}"
+
     return [
         find_matching_jobs,
         lookup_company_email,
         tailor_resume_for_role,
+        get_job_description,
         email_me_results,
         send_cold_emails,
         send_custom_email,
     ]
-
 
 async def chat(session, message: str) -> str:
     tools = build_session_tools(session)
