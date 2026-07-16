@@ -40,9 +40,18 @@ _llm = None
 
 def get_llm():
     global _llm
+
     if _llm is None:
-        endpoint = HuggingFaceEndpoint(...)
+        endpoint = HuggingFaceEndpoint(
+            repo_id="openai/gpt-oss-120b",
+            task="text-generation",
+            max_new_tokens=1024,
+            do_sample=False,
+            provider="auto",
+        )
+
         _llm = ChatHuggingFace(llm=endpoint)
+
     return _llm
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
 
@@ -317,7 +326,8 @@ def build_session_tools(session):
 
 async def chat(session, message: str) -> str:
     tools = build_session_tools(session)
-    agent = create_react_agent(_llm, tools)
+    llm = get_llm()
+    agent = create_react_agent(llm, tools)
 
     context_lines = []
     if session.resume_text:
