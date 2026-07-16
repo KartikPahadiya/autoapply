@@ -30,7 +30,7 @@ import tailoring_service
 from session_store import SESSION_COOKIE_NAME, SESSION_TTL_SECONDS, SessionData, store
 
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+# FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
 _cookie_secure_env = os.getenv("COOKIE_SECURE")
 COOKIE_SECURE = (
     _cookie_secure_env.lower() == "true"
@@ -41,14 +41,21 @@ DOCX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingm
 
 app = FastAPI(title="Career Agent Backend")
 
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[FRONTEND_ORIGIN],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=[],
+    allow_origin_regex=r"https://autoapply-.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 def safe_filename_part(value: str | None, fallback: str = "tailored") -> str:
     cleaned = re.sub(r"[^A-Za-z0-9_-]+", "_", value or "").strip("_")
