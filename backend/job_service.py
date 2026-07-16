@@ -84,6 +84,7 @@ def search_and_match(session, keywords: str, location: str, k: int = 5) -> list[
     items = scrape_jobs(keywords, location)
 
     docs, ids = [], []
+    full_descriptions = {}
     for item in items:
         url = item.get("url") or item.get("jobUrl") or item.get("link")
         if not url:
@@ -92,6 +93,7 @@ def search_and_match(session, keywords: str, location: str, k: int = 5) -> list[
         company = item.get("companyName") or item.get("company", "Unknown company")
         loc = item.get("location", "")
         description = item.get("description") or item.get("descriptionText") or ""
+        full_descriptions[url] = description
         page_content = f"{title} at {company} ({loc})\n\n{description}"[:4000]
         docs.append(
             Document(
@@ -115,6 +117,7 @@ def search_and_match(session, keywords: str, location: str, k: int = 5) -> list[
             "location": d.metadata["location"],
             "url": d.metadata["url"],
             "summary": d.page_content[:400],
+            "description": full_descriptions.get(d.metadata["url"], ""),
         }
         for d in results
     ]
