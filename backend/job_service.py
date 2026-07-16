@@ -75,7 +75,22 @@ def scrape_jobs(keywords: str, location: str = "", count: int = 30) -> list[dict
     items = list(apify_client.dataset(dataset_id).iterate_items())
     return items
 
-
+def resolve_job_match(company_or_title: str, matches: list[dict]) -> dict | None:
+    """Resolve a user's reference to one of the last search results — by
+    position number, exact company name, or a fuzzy title match."""
+    stripped = company_or_title.strip()
+    if stripped.isdigit():
+        idx = int(stripped) - 1
+        if 0 <= idx < len(matches):
+            return matches[idx]
+    lowered = stripped.lower()
+    for m in matches:
+        if m["company"].strip().lower() == lowered:
+            return m
+    title_matches = [m for m in matches if lowered in m["title"].lower()]
+    if len(title_matches) == 1:
+        return title_matches[0]
+    return None
 def search_and_match(session, keywords: str, location: str, k: int = 5) -> list[dict]:
     if not session.resume_text:
         raise ValueError("Upload a resume first.")
