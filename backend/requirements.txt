@@ -8,7 +8,6 @@ chromadb
 langchain-chroma
 langchain-huggingface
 langchain-core
-sentence-transformers
 pypdf
 python-docx
 pydantic
