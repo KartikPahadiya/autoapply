@@ -62,9 +62,17 @@ def scrape_jobs(keywords: str, location: str = "", count: int = 30) -> list[dict
     if location:
         search_url += f"&location={location.replace(' ', '%20')}"
     run = apify_client.actor("curious_coder/linkedin-jobs-scraper").call(
-        run_input={"urls": [search_url], "scrapeCompany": False, "count": count}
+        run_input={
+            "urls": [search_url],
+            "scrapeCompany": False,
+            "count": count,
+        }
     )
-    return list(apify_client.dataset(run["defaultDatasetId"]).iterate_items())
+
+    print(type(run))
+    print(run)
+
+    raise Exception("STOP")
 
 
 def search_and_match(session, keywords: str, location: str, k: int = 5) -> list[dict]:
