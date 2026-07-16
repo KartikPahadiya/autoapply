@@ -50,8 +50,9 @@ app = FastAPI(title="Career Agent Backend")
 # )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[],
-    allow_origin_regex=r"https://autoapply-.*\.vercel\.app",
+    allow_origins=[
+        "https://autoapply-o9u419trg-kartik-pahadiya.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
