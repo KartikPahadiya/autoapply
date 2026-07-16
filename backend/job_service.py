@@ -69,7 +69,7 @@ def scrape_jobs(keywords: str, location: str = "", count: int = 30) -> list[dict
         }
     )
 
-    dataset_id = run["defaultDatasetId"]
+    dataset_id = run.default_dataset_id
     items = list(apify_client.dataset(dataset_id).iterate_items())
     return items
 
