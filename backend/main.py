@@ -83,13 +83,15 @@ def get_or_create_session(request: Request, response: Response) -> tuple[str, Se
 
 
 @app.on_event("startup")
-async def _start_session_sweeper():
-    async def sweep_loop():
-        while True:
-            await asyncio.sleep(300)
-            store.sweep_expired()
+async def _warm_up_llm():
+    async def warmup():
+        try:
+            llm = agent_service.get_llm()
+            await llm.ainvoke("ping")
+        except Exception as exc:
+            print(f"LLM warmup failed (non-fatal): {exc}")
 
-    asyncio.create_task(sweep_loop())
+    asyncio.create_task(warmup())
 
 
 # ---------------------------------------------------------------------------
