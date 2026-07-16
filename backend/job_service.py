@@ -69,10 +69,9 @@ def scrape_jobs(keywords: str, location: str = "", count: int = 30) -> list[dict
         }
     )
 
-    print(type(run))
-    print(run)
-
-    raise Exception("STOP")
+    dataset_id = run["defaultDatasetId"]
+    items = list(apify_client.dataset(dataset_id).iterate_items())
+    return items
 
 
 def search_and_match(session, keywords: str, location: str, k: int = 5) -> list[dict]:
