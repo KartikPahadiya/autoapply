@@ -67,7 +67,7 @@ def get_or_create_session(request: Request, response: Response) -> tuple[str, Se
             SESSION_COOKIE_NAME,
             session_id,
             httponly=True,
-            samesite="lax",
+            samesite="none",
             secure=COOKIE_SECURE,
             max_age=SESSION_TTL_SECONDS,
         )
