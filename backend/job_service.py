@@ -12,9 +12,10 @@ import chromadb
 from apify_client import ApifyClient
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
 APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN")
+HF_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN") or os.getenv("HF_TOKEN")
 
 # Loaded once at process startup and shared read-only across all sessions —
 # this is a stateless model, not per-user data, so sharing it is fine.
