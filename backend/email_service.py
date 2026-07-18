@@ -107,7 +107,7 @@ def _send_via_sendgrid(
 
     mail = Mail(
         from_email=Email(SENDGRID_FROM_EMAIL),
-        to_emails=Email(to_addr),
+        to_emails=To(to_addr),
         subject=subject,
         plain_text_content=Content("text/plain", full_body),
     )
