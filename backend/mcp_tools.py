@@ -40,7 +40,7 @@ def _get_client() -> MultiServerMCPClient:
                 "cv_forge": {
                     "transport": "stdio",
                     "command": "npx",
-                    "args": ["-y", "cv-forge"],
+                    "args": ["cv-forge"],
                 }
             }
         )
