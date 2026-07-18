@@ -308,6 +308,7 @@ def build_session_tools(session):
                 attachment_filename=session.resume_filename,
             )
         except Exception as exc:
+            print(f"[send_custom_email] Failed to send: {type(exc).__name__}: {exc}")
             return f"Failed to send: {exc}"
         return f"Sent to {to}."
 
