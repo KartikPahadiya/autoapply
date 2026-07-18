@@ -149,6 +149,12 @@ export default function Chat({ email, resumeUploaded, onSignOut, onSetEmail, onR
         </div>
       </header>
 
+      {resumeError && (
+        <div className="console-email-bar">
+          <p style={{ color: "#f87171", margin: 0 }}>{resumeError}</p>
+        </div>
+      )}
+
       {editingEmail && (
         <div className="console-email-bar">
           <form className="console-email-form" onSubmit={handleSaveEmail}>
