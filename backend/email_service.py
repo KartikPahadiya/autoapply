@@ -10,7 +10,7 @@ import re
 
 import requests
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Attachment, Content, Email, FileContent, FileName, FileType, Mail, ReplyTo
+from sendgrid.helpers.mail import Attachment, Content, Email, FileContent, FileName, FileType, Mail, ReplyTo, To
 
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
