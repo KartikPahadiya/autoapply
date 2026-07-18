@@ -1,19 +1,12 @@
-"""Hunter.io company-email lookups and email sending via SendGrid OR Gmail SMTP.
+"""Hunter.io company-email lookups and email sending via SendGrid.
 
-Two modes:
-1. Gmail SMTP (preferred): user provides Gmail + App Password. Emails sent
-   FROM their actual Gmail address via Gmail's SMTP server.
-2. SendGrid (fallback): uses a verified domain as FROM, with Reply-To set to
-   the user's email.
+Emails are sent from a verified SendGrid sender, with Reply-To set to
+the user's own email address.
 
 Caching happens on the SessionData object, scoped per user."""
 import base64
 import os
 import re
-import smtplib
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import requests
 from sendgrid import SendGridAPIClient
