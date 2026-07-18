@@ -112,25 +112,17 @@ async def _warm_up_embeddings():
 # ---------------------------------------------------------------------------
 class SetEmailRequest(BaseModel):
     email: str
-    smtp_password: str = ""  # Gmail App Password (optional, 16-char)
 
 
 @app.post("/auth/email")
 def set_email(body: SetEmailRequest, request: Request, response: Response):
-    """Set the user's email address and optional Gmail App Password.
-    If smtp_password is provided, emails are sent via Gmail SMTP FROM
-    the user's actual address. Otherwise falls back to SendGrid."""
+    """Set the user's email address. Emails are sent via SendGrid, with
+    Reply-To set to this address."""
     _, session = get_or_create_session(request, response)
     if "@" not in body.email:
         raise HTTPException(400, "Invalid email address.")
     session.user_email = body.email.strip().lower()
-    # Store App Password if provided (trim whitespace, validate length)
-    pw = body.smtp_password.strip()
-    if pw:
-        if len(pw) < 10:
-            raise HTTPException(400, "App Password looks too short. Generate it at Google Account > Security > App Passwords.")
-        session.smtp_password = pw
-    return {"ok": True, "email": session.user_email, "smtp": bool(session.smtp_password)}
+    return {"ok": True, "email": session.user_email}
 
 
 @app.post("/auth/logout")
