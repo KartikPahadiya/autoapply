@@ -559,6 +559,7 @@ async def test_tailor(body: TestTailorRequest, request: Request, response: Respo
     # 4. Also try to get the raw agent messages for deeper inspection
     try:
         agent = await tailoring_service._get_tailoring_agent()
+        agent = agent.with_config({"recursion_limit": 8})
         user_prompt = (
             f"Candidate resume:\n{body.resume_text}\n\n"
             f"Target job description:\n{body.job_description}\n\n"
