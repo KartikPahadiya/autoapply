@@ -92,35 +92,6 @@ def get_or_fetch_emails(session, company: str) -> list[dict]:
     return session.email_cache[company]
 
 
-def _send_via_smtp(
-    user_email: str,
-    smtp_password: str,
-    to_addr: str,
-    subject: str,
-    body_text: str,
-    attachment_bytes: bytes | None = None,
-    attachment_filename: str | None = None,
-) -> None:
-    """Send email via Gmail's SMTP server using the user's App Password.
-    This sends FROM the user's actual Gmail address."""
-    msg = MIMEMultipart() if attachment_bytes else MIMEText(body_text)
-
-    if attachment_bytes:
-        msg.attach(MIMEText(body_text))
-        attachment = MIMEApplication(attachment_bytes)
-        attachment.add_header("Content-Disposition", "attachment", filename=attachment_filename or "resume")
-        msg.attach(attachment)
-
-    msg["From"] = user_email
-    msg["To"] = to_addr
-    msg["Subject"] = subject
-
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(user_email, smtp_password)
-        server.send_message(msg)
-
-
 def _send_via_sendgrid(
     user_email: str,
     to_addr: str,
