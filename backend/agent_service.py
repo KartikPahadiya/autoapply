@@ -49,7 +49,7 @@ def get_llm():
             task="text-generation",
             max_new_tokens=1024,
             do_sample=False,
-            provider="auto",
+            provider="cerebras",
         )
 
         _llm = ChatHuggingFace(llm=endpoint)
