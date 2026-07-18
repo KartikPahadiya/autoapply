@@ -138,7 +138,6 @@ def me(request: Request, response: Response):
     return {
         "logged_in": bool(session.user_email),
         "email": session.user_email,
-        "smtp": bool(session.smtp_password),
     }
 
 
