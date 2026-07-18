@@ -107,6 +107,18 @@ async def _warm_up_embeddings():
     asyncio.create_task(warmup())
 
 
+@app.on_event("startup")
+async def _warm_up_mcp():
+    async def warmup():
+        try:
+            import mcp_tools
+            await mcp_tools.get_mcp_tools()
+            print("MCP (CV Forge) tools warmed up successfully")
+        except Exception as exc:
+            print(f"MCP warmup failed (non-fatal): {exc}")
+
+    asyncio.create_task(warmup())
+
 # ---------------------------------------------------------------------------
 # Auth (simple email-based, no OAuth)
 # ---------------------------------------------------------------------------
