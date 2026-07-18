@@ -52,6 +52,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://autoapply-o9u419trg-kartik-pahadiya.vercel.app",
+        "https://autoapply-gamma.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
