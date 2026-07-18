@@ -133,6 +133,16 @@ export default function Chat({ email, resumeUploaded, onSignOut, onSetEmail, onR
               Edit email
             </button>
           )}
+          <button className="console-connect" onClick={handleFilePick} disabled={uploading}>
+            {uploading ? "Uploading…" : resumeUploaded ? "Replace resume" : "Upload resume"}
+          </button>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".pdf,.docx"
+            style={{ display: "none" }}
+            onChange={handleFileChange}
+          />
           <button className="console-signout" onClick={onSignOut}>
             Exit
           </button>
