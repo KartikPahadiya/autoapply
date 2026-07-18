@@ -367,7 +367,8 @@ async def chat(session, message: str) -> str:
 
     last_exc = None
     result = None
-    for attempt in range(3):
+    max_attempts = 3
+    for attempt in range(max_attempts):
         try:
             result = await agent.ainvoke(
                 {"messages": [SystemMessage(content=dynamic_prompt)] + session.chat_history}
@@ -375,7 +376,12 @@ async def chat(session, message: str) -> str:
             break
         except Exception as exc:
             last_exc = exc
-            if attempt < 2:
+            error_text = str(exc)
+            non_retryable = "402" in error_text or "Payment Required" in error_text
+            if non_retryable:
+                print(f"[chat] Non-retryable error, giving up immediately: {error_text}")
+                break
+            if attempt < max_attempts - 1:
                 await asyncio.sleep(2 ** attempt)  # 1s, 2s backoff
     if result is None:
         raise last_exc
