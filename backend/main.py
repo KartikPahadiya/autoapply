@@ -548,11 +548,14 @@ async def test_tailor(body: TestTailorRequest, request: Request, response: Respo
         result = await tailoring_service.tailor_resume_and_cover_letter(
             body.resume_text, body.job_description, company="TestCo", title="Test Role"
         )
-        diagnostics["parsed_result"] = result
+        safe_result = {
+            k: (f"<{len(v)} bytes>" if isinstance(v, (bytes, bytearray)) else v)
+            for k, v in result.items()
+        }
+        diagnostics["parsed_result"] = safe_result
     except Exception as exc:
         diagnostics["agent_run_error"] = str(exc)
         raise HTTPException(500, f"Tailoring agent failed: {exc}")
-
     # 4. Also try to get the raw agent messages for deeper inspection
     try:
         agent = await tailoring_service._get_tailoring_agent()
