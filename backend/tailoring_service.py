@@ -162,6 +162,7 @@ async def tailor_resume_and_cover_letter(
 
     # 4. Run the agent with CV Forge tools
     agent = await _get_tailoring_agent()
+    agent = agent.with_config({"recursion_limit": 8})
 
     user_prompt = (
         f"User Profile:\n{json.dumps(user_profile, indent=2)}\n\n"
