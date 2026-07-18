@@ -93,6 +93,23 @@ export default function Chat({ email, resumeUploaded, onSignOut, onSetEmail, onR
     }
   };
 
+  const handleFilePick = () => fileInput.current?.click();
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setResumeError(null);
+    setUploading(true);
+    try {
+      await api.uploadResume(file);
+      onResumeUploaded(file.name);
+    } catch (err) {
+      setResumeError(err.message || "Upload failed.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
   return (
     <div className="console">
       <header className="console-header">
