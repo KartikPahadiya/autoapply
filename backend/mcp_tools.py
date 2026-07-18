@@ -10,9 +10,9 @@ Tools available:
 - generate_cover_letter — generates cover letter
 - parse_job_requirements — extracts skills from JD
 """
+import asyncio
 import os
 import shutil
-
 from langchain_mcp_adapters.client import MultiServerMCPClient
 
 _client: MultiServerMCPClient | None = None
