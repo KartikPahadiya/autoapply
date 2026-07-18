@@ -34,7 +34,6 @@ class SessionData:
 
     # User's email address and optional Gmail App Password for SMTP sending
     user_email: Optional[str] = None
-    smtp_password: Optional[str] = None  # Gmail App Password (16-char)
 
     # Resume — kept in memory only; never written to disk.
     resume_text: Optional[str] = None
