@@ -136,30 +136,18 @@ def send_email(
     attachment_bytes: bytes | None = None,
     attachment_filename: str | None = None,
 ) -> None:
-    """Send an email. If the user has provided an SMTP password (Gmail App
-    Password), send via Gmail SMTP FROM their actual address. Otherwise fall
-    back to SendGrid."""
+    """Send an email via SendGrid, with Reply-To set to the user's address."""
     user_email = session.user_email
-    smtp_password = getattr(session, "smtp_password", None)
 
     if not user_email:
         raise RuntimeError("No user email set.")
 
-    if smtp_password:
-        # Gmail SMTP — sends FROM user's actual email address
-        _send_via_smtp(
-            user_email, smtp_password, to_addr, subject, body_text,
-            attachment_bytes, attachment_filename
+    if not sendgrid_configured():
+        raise RuntimeError(
+            "Email sending isn't configured on the server (SENDGRID_API_KEY missing)."
         )
-    else:
-        # SendGrid fallback — sends FROM verified domain
-        if not sendgrid_configured():
-            raise RuntimeError(
-                "Email sending not configured. Either:\n"
-                "1. Enter your Gmail App Password for sending from your own email, or\n"
-                "2. Ask the admin to set SENDGRID_API_KEY in the backend."
-            )
-        _send_via_sendgrid(
-            user_email, to_addr, subject, body_text,
-            attachment_bytes, attachment_filename
-        )
+
+    _send_via_sendgrid(
+        user_email, to_addr, subject, body_text,
+        attachment_bytes, attachment_filename
+    )
