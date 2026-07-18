@@ -107,7 +107,7 @@ async def _parse_resume_to_profile(resume_text: str) -> dict:
 
     # Fallback: return minimal profile with raw text
     return {
-        "fullName": "",
+        "fullName": "Applicant",
         "email": "",
         "phone": "",
         "location": "",
