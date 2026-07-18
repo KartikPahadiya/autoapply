@@ -54,3 +54,10 @@ async def get_mcp_tools():
         client = _get_client()
         _tools_cache = await client.get_tools()
     return _tools_cache
+
+
+# Aliases so main.py's diagnostic endpoints (/test/config, /test/tailor)
+# can call these under the names they expect.
+laddro_configured = mcp_configured
+get_laddro_tools = get_mcp_tools
+LADDRO_MCP_URL = "cv-forge (npx, stdio)"
