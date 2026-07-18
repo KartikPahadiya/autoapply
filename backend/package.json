@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "dependencies": {
     "cv-forge": "latest"
+  },
+  "scripts": {
+    "postinstall": "npx puppeteer browsers install chrome"
   }
 }
