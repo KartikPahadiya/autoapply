@@ -52,7 +52,15 @@ async def get_mcp_tools():
     global _tools_cache
     if _tools_cache is None:
         client = _get_client()
-        _tools_cache = await client.get_tools()
+        try:
+            _tools_cache = await asyncio.wait_for(client.get_tools(), timeout=45)
+        except asyncio.TimeoutError:
+            raise RuntimeError(
+                "Timed out waiting for the CV Forge MCP server to start (45s). "
+                "This usually means 'npx -y cv-forge' is hanging while trying to "
+                "download the package, or Node.js/npm isn't properly available "
+                "on this server."
+            )
     return _tools_cache
 
 
