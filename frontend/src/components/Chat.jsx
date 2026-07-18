@@ -26,14 +26,17 @@ function MarkdownLink({ href = "", children, ...props }) {
   );
 }
 
-export default function Chat({ email, onSignOut, onSetEmail }) {
+export default function Chat({ email, resumeUploaded, onSignOut, onSetEmail, onResumeUploaded }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [editingEmail, setEditingEmail] = useState(false);
   const [emailInput, setEmailInput] = useState(email || "");
+  const [uploading, setUploading] = useState(false);
+  const [resumeError, setResumeError] = useState(null);
   const bodyRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInput = useRef(null);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight, behavior: "smooth" });
