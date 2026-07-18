@@ -56,22 +56,15 @@ export default function App() {
     );
   }
 
-  const canEnter = resumeUploaded;
-
   return (
     <div className="app-shell">
-      {canEnter && entered ? (
-        <Chat email={email} onSignOut={handleSignOut} onSetEmail={handleEmailSet} />
-      ) : (
-        <AccessPanel
-          authChecked={authChecked}
-          email={email}
-          resumeUploaded={resumeUploaded}
-          onEmailSet={handleEmailSet}
-          onResumeUploaded={handleResumeUploaded}
-          onEnter={handleEnter}
-        />
-      )}
+      <Chat
+        email={email}
+        resumeUploaded={resumeUploaded}
+        onSignOut={handleSignOut}
+        onSetEmail={handleEmailSet}
+        onResumeUploaded={handleResumeUploaded}
+      />
     </div>
   );
 }
