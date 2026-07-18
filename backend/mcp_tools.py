@@ -53,7 +53,7 @@ async def get_mcp_tools():
     if _tools_cache is None:
         client = _get_client()
         try:
-            _tools_cache = await asyncio.wait_for(client.get_tools(), timeout=45)
+            _tools_cache = await asyncio.wait_for(client.get_tools(), timeout=90)
         except asyncio.TimeoutError:
             raise RuntimeError(
                 "Timed out waiting for the CV Forge MCP server to start (45s). "
