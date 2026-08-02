@@ -189,16 +189,11 @@ async def tailor_resume_and_cover_letter(
     cover_letter_text = None
     tailored_resume_text = None
 
-    expected_pdf = Path(output_dir) / f"{base_name}_CV.pdf"
-    expected_cover = Path(output_dir) / f"{base_name}_Cover_Letter.pdf"
+    expected_md = Path(output_dir) / f"{base_name}_CV.md"
     expected_email = Path(output_dir) / f"{base_name}_Email_Template.txt"
 
-    if expected_pdf.exists():
-        pdf_bytes = expected_pdf.read_bytes()
-        tailored_resume_text = _extract_pdf_text(pdf_bytes)
-
-    if expected_cover.exists():
-        cover_letter_text = _extract_pdf_text(expected_cover.read_bytes())
+    if expected_md.exists():
+        tailored_resume_text = expected_md.read_text(encoding="utf-8", errors="replace").strip()
 
     if expected_email.exists():
         email_text = expected_email.read_text(encoding="utf-8", errors="replace")
