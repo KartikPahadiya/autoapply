@@ -41,6 +41,7 @@ def _get_client() -> MultiServerMCPClient:
                     "transport": "stdio",
                     "command": "npx",
                     "args": ["cv-forge"],
+                    "env": {**os.environ},
                 }
             }
         )
