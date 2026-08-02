@@ -13,6 +13,7 @@ python-docx
 pydantic
 langgraph
 langchain-mcp-adapters
+mcp<2.0.0
 langchain-nvidia-ai-endpoints
 sendgrid
 langchain-openai
