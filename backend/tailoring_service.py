@@ -167,12 +167,14 @@ async def tailor_resume_and_cover_letter(
     user_prompt = (
         f"User Profile:\n{json.dumps(user_profile, indent=2)}\n\n"
         f"Job Requirements:\n{json.dumps(job_requirements, indent=2)}\n\n"
-        f"Call draft_complete_application with:\n"
+        f"Call generate_cv with:\n"
         f"- userProfile: the user profile above\n"
         f"- jobRequirements: the job requirements above\n"
         f"- outputPath: {output_dir}\n"
-        f"- baseFileName: {base_name}\n\n"
-        f"If draft_complete_application is not available, use generate_cv + generate_cover_letter separately."
+        f"- fileName: {base_name}_CV\n"
+        f"- format: markdown\n\n"
+        f"Then call generate_cover_letter with the same profile and job requirements "
+        f"to get the cover letter text (do not save it to a file, just return it)."
     )
 
     result = await agent.ainvoke(
