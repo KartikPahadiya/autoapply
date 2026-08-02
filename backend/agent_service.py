@@ -393,7 +393,7 @@ async def chat(session, message: str) -> str:
         context_lines.append(f"\nLast job search: {len(session.last_matches)} results stored.")
 
     dynamic_prompt = SYSTEM_PROMPT + "\n".join(context_lines)
-
+    message = message.replace("\u202f", " ").replace("\xa0", " ").replace("\u200b", "")
     if len(message) > 1000:
         message = message + (
             "\n\n[SYSTEM NOTE: The text above is long — likely a pasted job "
