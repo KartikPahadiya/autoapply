@@ -420,6 +420,44 @@ async def chat(session, message: str) -> str:
 
     session.chat_history.append(HumanMessage(content=message))
 
+    # last_exc = None
+    # result = None
+    # max_attempts = 3
+    # for attempt in range(max_attempts):
+    #     try:
+    #         result = await agent.ainvoke(
+    #             {"messages": [SystemMessage(content=dynamic_prompt)] + session.chat_history}
+    #         )
+    #         break
+    #     except Exception as exc:
+    #         last_exc = exc
+    #         error_text = str(exc)
+    #         non_retryable = "402" in error_text or "Payment Required" in error_text
+    #         if non_retryable:
+    #             print(f"[chat] Non-retryable error, giving up immediately: {error_text}")
+    #             break
+    #         if attempt < max_attempts - 1:
+    #             await asyncio.sleep(2 ** attempt)  # 1s, 2s backoff
+    # if result is None:
+    #     raise last_exc
+
+    # reply = result["messages"][-1]
+    # content = reply.content
+
+    # if not content or not content.strip():
+    #     # The model returned an empty final message — log the full message
+    #     # trail so we can see WHY next time, and never show a blank bubble.
+    #     print(f"[chat] Empty final reply. Last {min(5, len(result['messages']))} messages:")
+    #     for m in result["messages"][-5:]:
+    #         tool_calls = getattr(m, "tool_calls", None)
+    #         print(f"  {type(m).__name__}: content={str(getattr(m, 'content', ''))[:300]!r} tool_calls={tool_calls}")
+    #     content = (
+    #         "Sorry, I ran into an issue completing that and didn't have a "
+    #         "response ready. Could you try again, or rephrase your request?"
+    #     )
+
+    # session.chat_history.append(AIMessage(content=content))
+    # return content
     last_exc = None
     result = None
     max_attempts = 3
@@ -428,7 +466,6 @@ async def chat(session, message: str) -> str:
             result = await agent.ainvoke(
                 {"messages": [SystemMessage(content=dynamic_prompt)] + session.chat_history}
             )
-            break
         except Exception as exc:
             last_exc = exc
             error_text = str(exc)
@@ -436,25 +473,33 @@ async def chat(session, message: str) -> str:
             if non_retryable:
                 print(f"[chat] Non-retryable error, giving up immediately: {error_text}")
                 break
+            result = None
             if attempt < max_attempts - 1:
                 await asyncio.sleep(2 ** attempt)  # 1s, 2s backoff
+            continue
+
+        last_msg = result["messages"][-1]
+        has_content = bool(last_msg.content and last_msg.content.strip())
+        has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
+        if has_content or has_tool_calls:
+            break  # got a usable reply
+
+        print(f"[chat] Attempt {attempt + 1}: model returned empty reply, retrying...")
+        result = None
+        if attempt < max_attempts - 1:
+            await asyncio.sleep(1)
+
     if result is None:
-        raise last_exc
+        if last_exc:
+            raise last_exc
+        reply_content = (
+            "Sorry, I ran into an issue completing that and didn't have a "
+            "response ready after a few tries. Could you try again, or "
+            "rephrase your request?"
+        )
+        session.chat_history.append(AIMessage(content=reply_content))
+        return reply_content
 
     reply = result["messages"][-1]
-    content = reply.content
-
-    if not content or not content.strip():
-        # The model returned an empty final message — log the full message
-        # trail so we can see WHY next time, and never show a blank bubble.
-        print(f"[chat] Empty final reply. Last {min(5, len(result['messages']))} messages:")
-        for m in result["messages"][-5:]:
-            tool_calls = getattr(m, "tool_calls", None)
-            print(f"  {type(m).__name__}: content={str(getattr(m, 'content', ''))[:300]!r} tool_calls={tool_calls}")
-        content = (
-            "Sorry, I ran into an issue completing that and didn't have a "
-            "response ready. Could you try again, or rephrase your request?"
-        )
-
-    session.chat_history.append(AIMessage(content=content))
-    return content
+    session.chat_history.append(AIMessage(content=reply.content))
+    return reply.content
