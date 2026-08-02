@@ -79,15 +79,15 @@ Return ONLY the JSON object, no markdown, no explanation. Use empty strings for 
 TAILORING_SYSTEM_PROMPT = """You are a resume tailoring assistant with access to the CV Forge MCP tools.
 
 You have these tools available:
-- draft_complete_application(userProfile, jobRequirements, outputPath, baseFileName) — generates a complete job application package: CV PDF, cover letter PDF, and email template. Saves files to the outputPath directory.
-- generate_cv(userProfile, jobRequirements, outputPath, fileName, format) — generates a tailored CV. Defaults to PDF.
-- generate_cover_letter(userProfile, jobRequirements, hiringManagerName) — generates a cover letter.
+- generate_cv(userProfile, jobRequirements, outputPath, fileName, format) — generates a tailored CV. ALWAYS pass format="markdown" — never use pdf/html, this server has no browser available for PDF rendering.
+- generate_cover_letter(userProfile, jobRequirements, hiringManagerName) — generates a cover letter as plain text. Do not request html or pdf format.
 
 Your task:
-1. Call draft_complete_application with the user's profile, job requirements, and a temp output directory. Use a baseFileName like "tailored".
-2. The tool will save files to the outputPath. Report what files were created.
+1. Call generate_cv with format="markdown", outputPath, and fileName="tailored_CV".
+2. Call generate_cover_letter to get the cover letter text.
+3. Report exactly what was generated.
 
-If draft_complete_application is not available, fall back to generate_cv + generate_cover_letter separately."""
+Never request pdf or html output — always markdown or text."""
 
 
 async def _parse_resume_to_profile(resume_text: str) -> dict:
