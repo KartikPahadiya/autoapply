@@ -341,21 +341,7 @@ def build_session_tools(session):
         except Exception as exc:
             print(f"[send_custom_email] Failed to send: {type(exc).__name__}: {exc}")
             return f"Failed to send: {exc}"
-        # return f"Sent to {to}." 
-        # attachment_bytes = session.resume_bytes if attach_resume else None
-        # try:
-        #     email_service.send_email(
-        #         session=session,
-        #         to_addr=to,
-        #         subject=subject,
-        #         body_text=body,
-        #         attachment_bytes=attachment_bytes,
-        #         attachment_filename=session.resume_filename,
-        #     )
-        # except Exception as exc:
-        #     print(f"[send_custom_email] Failed to send: {type(exc).__name__}: {exc}")
-        #     return f"Failed to send: {exc}"
-        # return f"Sent to {to}."
+        return f"Sent to {to}."
 
     @tool_decorator
     def get_job_description(company_or_title: str) -> str:
