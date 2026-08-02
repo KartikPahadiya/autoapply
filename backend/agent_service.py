@@ -432,5 +432,19 @@ async def chat(session, message: str) -> str:
         raise last_exc
 
     reply = result["messages"][-1]
-    session.chat_history.append(AIMessage(content=reply.content))
-    return reply.content
+    content = reply.content
+
+    if not content or not content.strip():
+        # The model returned an empty final message — log the full message
+        # trail so we can see WHY next time, and never show a blank bubble.
+        print(f"[chat] Empty final reply. Last {min(5, len(result['messages']))} messages:")
+        for m in result["messages"][-5:]:
+            tool_calls = getattr(m, "tool_calls", None)
+            print(f"  {type(m).__name__}: content={str(getattr(m, 'content', ''))[:300]!r} tool_calls={tool_calls}")
+        content = (
+            "Sorry, I ran into an issue completing that and didn't have a "
+            "response ready. Could you try again, or rephrase your request?"
+        )
+
+    session.chat_history.append(AIMessage(content=content))
+    return content
