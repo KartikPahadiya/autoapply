@@ -408,6 +408,16 @@ async def chat(session, message: str) -> str:
 
     dynamic_prompt = SYSTEM_PROMPT + "\n".join(context_lines)
 
+    if len(message) > 1000:
+        message = message + (
+            "\n\n[SYSTEM NOTE: The text above is long — likely a pasted job "
+            "description or similar document. If the user wants their "
+            "resume/CV/cover letter tailored to it, call "
+            "tailor_resume_for_role NOW with the full text above as "
+            "job_description. Do not ask the user to paste it again — you "
+            "already have it.]"
+        )
+
     session.chat_history.append(HumanMessage(content=message))
 
     last_exc = None
