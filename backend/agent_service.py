@@ -22,7 +22,9 @@ import os
 import re
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.tools import tool as tool_decorator
-from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+# from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+# from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
 import email_service
@@ -30,29 +32,47 @@ import job_service
 import mcp_tools
 import tailoring_service
 
-# _llm_endpoint = HuggingFaceEndpoint(
-#     repo_id="openai/gpt-oss-120b",
-#     task="text-generation",
-#     max_new_tokens=1024,
-#     do_sample=False,
-#     provider="auto",
-# )
-# _llm = ChatHuggingFace(llm=_llm_endpoint)
+# # _llm_endpoint = HuggingFaceEndpoint(
+# #     repo_id="openai/gpt-oss-120b",
+# #     task="text-generation",
+# #     max_new_tokens=1024,
+# #     do_sample=False,
+# #     provider="auto",
+# # )
+# # _llm = ChatHuggingFace(llm=_llm_endpoint)
+# _llm = None
+
+# def get_llm():
+#     global _llm
+
+#     if _llm is None:
+#         endpoint = HuggingFaceEndpoint(
+#             repo_id="openai/gpt-oss-120b",
+#             task="text-generation",
+#             max_new_tokens=1024,
+#             do_sample=False,
+#             provider="cerebras",
+#         )
+
+#         _llm = ChatHuggingFace(llm=endpoint)
+
+#     return _llm
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-chat")
+
 _llm = None
 
 def get_llm():
     global _llm
 
     if _llm is None:
-        endpoint = HuggingFaceEndpoint(
-            repo_id="openai/gpt-oss-120b",
-            task="text-generation",
-            max_new_tokens=1024,
-            do_sample=False,
-            provider="cerebras",
+        _llm = ChatOpenAI(
+            model=OPENROUTER_MODEL,
+            api_key=OPENROUTER_API_KEY,
+            base_url="https://openrouter.ai/api/v1",
+            max_tokens=1024,
+            temperature=0,
         )
-
-        _llm = ChatHuggingFace(llm=endpoint)
 
     return _llm
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL", "http://localhost:8000")
