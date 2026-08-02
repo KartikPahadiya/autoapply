@@ -15,4 +15,4 @@ langgraph
 langchain-mcp-adapters
 langchain-nvidia-ai-endpoints
 sendgrid
-
+langchain-openai
