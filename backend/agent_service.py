@@ -469,7 +469,7 @@ async def chat(session, message: str) -> str:
         has_tool_calls = bool(getattr(last_msg, "tool_calls", None))
         if has_content or has_tool_calls:
             break  # got a usable reply
-
+        print(f"[chat] response_metadata: {getattr(last_msg, 'response_metadata', {})}")
         print(f"[chat] Attempt {attempt + 1}: model returned empty reply, retrying...")
         result = None
         if attempt < max_attempts - 1:
