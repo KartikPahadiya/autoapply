@@ -309,33 +309,39 @@ def build_session_tools(session):
 
         return "Cold email results:\n" + "\n".join(results)
 
-    # @tool_decorator
-    # def send_custom_email(to: str, subject: str, body: str, attach_resume: bool = False) -> str:
-    #     """Send a fully custom email to any recipient. Only call after the
-    #     user has confirmed a preview you showed them in an earlier turn."""
-    #     if not session.user_email:
-    #         return "No email address set. Ask the user to set their email first."
-    #     if "@" not in to:
-    #         return f"'{to}' doesn't look like a valid email address."
-      @tool_decorator
-      def send_custom_email(to: str, subject: str, body: str, attach_resume: bool = False) -> str:
-          """Send a fully custom email to exactly ONE recipient. `to` must be a
-          single email address — never comma-separated or multiple addresses.
-          If you need to email several people, call this tool once per
-          recipient (one tool call per person), or use send_cold_emails for
-          a batch. Only call after the user has confirmed a preview you
-          presented in an earlier turn."""
-          if not session.user_email:
-              return "No email address set. Ask the user to set their email first."
-          to = to.strip()
-          if "," in to or ";" in to:
-              return (
-                  f"'{to}' looks like multiple addresses in one call. Call "
-                  "send_custom_email separately for each recipient, one "
-                  "address per call — do not combine them."
-              )
-          if "@" not in to:
-              return f"'{to}' doesn't look like a valid email address."  
+    @tool_decorator
+    def send_custom_email(to: str, subject: str, body: str, attach_resume: bool = False) -> str:
+        """Send a fully custom email to exactly ONE recipient. `to` must be a
+        single email address — never comma-separated or multiple addresses.
+        If you need to email several people, call this tool once per
+        recipient (one tool call per person), or use send_cold_emails for
+        a batch. Only call after the user has confirmed a preview you
+        presented in an earlier turn."""
+        if not session.user_email:
+            return "No email address set. Ask the user to set their email first."
+        to = to.strip()
+        if "," in to or ";" in to:
+            return (
+                f"'{to}' looks like multiple addresses in one call. Call "
+                "send_custom_email separately for each recipient, one "
+                "address per call — do not combine them."
+            )
+        if "@" not in to:
+            return f"'{to}' doesn't look like a valid email address."
+        attachment_bytes = session.resume_bytes if attach_resume else None
+        try:
+            email_service.send_email(
+                session=session,
+                to_addr=to,
+                subject=subject,
+                body_text=body,
+                attachment_bytes=attachment_bytes,
+                attachment_filename=session.resume_filename,
+            )
+        except Exception as exc:
+            print(f"[send_custom_email] Failed to send: {type(exc).__name__}: {exc}")
+            return f"Failed to send: {exc}"
+        return f"Sent to {to}." 
         attachment_bytes = session.resume_bytes if attach_resume else None
         try:
             email_service.send_email(
